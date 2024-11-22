@@ -5,65 +5,50 @@ const Offer = require("../models/Offer")
 const isAuthenticated = require("../middleware/isAuthenticated")
 
 router.post("/offer/publish", isAuthenticated, async (req, res) => {
-	console.log(req.user)
-	try {
-		const { title, description, price, brand, size, condition, color, city } =
-			req.fields
+    try {
+        const { title, description, price, size, condition } = req.fields;
 
-		console.log(
-			"req.fields ===>",
-			req.fields,
-			"req files ===>",
-			req.files.picture.path
-		)
-		if (title && price && req.files.picture.path) {
-			const newOffer = new Offer({
-				product_name: req.fields.title,
-				product_description: description,
-				product_price: price,
-				product_details: [
-					{ BRAND: brand },
-					{ SIZE: size },
-					{ CONDITION: condition },
-					{ COLOR: color },
-					{ LOCATION: city },
-				],
-				owner: req.user,
-			})
+        console.log("req.fields ===>", req.fields);
+        console.log("req.files ===>", req.files);
 
-			// Send image to cloudinary
-			// const result = await cloudinary.uploader.unsigned_upload(
-			// 	req.files.picture.path,
-			// 	"ml_default",
-			// 	{
-			// 		folder: `api/vinted/offers/${newOffer._id}`,
-			// 		// public_id: "preview",
-			// 		// public_id: `preview + ${newOffer._id}`,
-			// 		public_id: `${newOffer._id}`,
-			// 		cloud_name: "manuelf-cloudinary",
-			// 	}
-			// )
+        if (title && price && req.files["picture1"].path) {
+            const newOffer = new Offer({
+                product_name: title,
+                product_description: description,
+                product_price: price,
+                product_details: [
+                    { SIZE: size },
+                    { CONDITION: condition },
+                ],
+                owner: req.user,
+            });
 
-			const result = await cloudinary.uploader.upload(req.files.picture.path, {
-				folder: "/vinted/offers",
-			})
-			// console.log(result);
-			newOffer.product_image = result
+            // Upload images to Cloudinary
+            const imageUrls = [];
+            for (let i = 1; i <= 3; i++) {
+                const pictureField = `picture${i}`;
+                if (req.files[pictureField]) {
+                    const result = await cloudinary.uploader.upload(req.files[pictureField].path, {
+                        folder: "/vinted/offers",
+                    });
+                    imageUrls.push({ url: result.secure_url });
+                }
+            }
+            newOffer.product_images = imageUrls;
 
-			// add user
-			newOffer.owner = req.user
+            // Save the new offer
+            await newOffer.save();
 
-			await newOffer.save()
-
-			res.json(newOffer)
-		} else {
-			res.status(400).json({
-				message: "title, price and picture are required",
-			})
-		}
-	} catch (error) {
-		res.status(400).json({ message: error.message })
-	}
+            res.json(newOffer);
+        } else {
+            res.status(400).json({
+                message: "title, price and at least one picture are required",
+            });
+        }
+    } catch (error) {
+        console.log(error.message);
+        res.status(400).json({ message: error.message });
+    }
 })
 
 router.get("/offers", async (req, res) => {
@@ -101,27 +86,12 @@ router.get("/offers", async (req, res) => {
 			sortObject.product_price = "asc"
 		}
 
-		// Pagination management
-		// By default we have 5 listings per page
-		// If my page equals 1, I should skip 0 listings
-		// If my page equals 2, I should skip 5 listings
-		// If my page equals 4, I should skip 15 listings
 
-		//(1-1) * 5 = skip 0 results => PAGE 1
-		//(2-1) * 5 = SKIP 5 RESULTS => page 2
-		//(4-1) * 5 = skip 15 results => page 4
-		// let limit = 0
-		// limit = Number(req.query.limit)
 		let limit = 0
 		if (req.query.limit) {
 			limit = Number(req.query.limit)
 		}
-		// let page = 1
-		// if (Number(req.query.page) < 1) {
-		// 	page = 1
-		// } else {
-		// 	page = Number(req.query.page)
-		// }
+	
 		let page = 1
 		if (req.query.page) {
 			page = req.query.page
