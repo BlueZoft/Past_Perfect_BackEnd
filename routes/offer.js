@@ -8,9 +8,6 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
     try {
         const { title, description, price, size, condition } = req.fields;
 
-        console.log("req.fields ===>", req.fields);
-        console.log("req.files ===>", req.files);
-
         if (title && price && req.files["picture1"].path) {
             const newOffer = new Offer({
                 product_name: title,
@@ -52,86 +49,87 @@ router.post("/offer/publish", isAuthenticated, async (req, res) => {
 })
 
 router.get("/offers", async (req, res) => {
-	try {
-		const filtersObject = {}
+    try {
+        const filtersObject = {};
 
-		// Title Management
-		if (req.query.title) {
-			filtersObject.product_name = new RegExp(req.query.title, "i")
-		}
+        // Title Management
+        if (req.query.title) {
+            filtersObject.product_name = new RegExp(req.query.title, "i");
+        }
 
-		if (req.query.priceMin) {
-			filtersObject.product_price = {
-				$gte: req.query.priceMin,
-			}
-		}
+        if (req.query.priceMin) {
+            filtersObject.product_price = {
+                $gte: req.query.priceMin,
+            };
+        }
 
-		if (req.query.priceMax) {
-			if (filtersObject.product_price) {
-				filtersObject.product_price.$lte = req.query.priceMax
-			} else {
-				filtersObject.product_price = {
-					$lte: req.query.priceMax,
-				}
-			}
-		}
+        if (req.query.priceMax) {
+            if (filtersObject.product_price) {
+                filtersObject.product_price.$lte = req.query.priceMax;
+            } else {
+                filtersObject.product_price = {
+                    $lte: req.query.priceMax,
+                };
+            }
+        }
 
-		console.log(filtersObject)
+        console.log(filtersObject);
 
-		// Sort management with sortObject
-		const sortObject = {}
-		if (req.query.sort === "price-desc") {
-			sortObject.product_price = "desc"
-		} else if (req.query.sort === "price-asc") {
-			sortObject.product_price = "asc"
-		}
+        // Sort management with sortObject
+        const sortObject = {};
+        if (req.query.sort === "price-desc") {
+            sortObject.product_price = "desc";
+        } else if (req.query.sort === "price-asc") {
+            sortObject.product_price = "asc";
+        }
 
+        let limit = 0;
+        if (req.query.limit) {
+            limit = Number(req.query.limit);
+        }
 
-		let limit = 0
-		if (req.query.limit) {
-			limit = Number(req.query.limit)
-		}
-	
-		let page = 1
-		if (req.query.page) {
-			page = req.query.page
-		}
+        let page = 1;
+        if (req.query.page) {
+            page = Number(req.query.page);
+        }
 
-		const offers = await Offer.find(filtersObject)
-			.populate({
-				path: "owner",
-				select: "account",
-			})
-			.sort(sortObject)
-			.skip((page - 1) * limit)
-			.limit(limit)
-		// .select("product_name product_price")
+        const offers = await Offer.find(filtersObject)
+            .populate({
+                path: "owner",
+                select: "account",
+            })
+            .sort(sortObject)
+            .skip((page - 1) * limit)
+            .limit(limit);
 
-		// this line will return the number of listings found based on the filters
-		const count = await Offer.countDocuments(filtersObject)
+        // this line will return the number of listings found based on the filters
+        const count = await Offer.countDocuments(filtersObject);
 
-		res.json({
-			count: count,
-			offers: offers,
-		})
-	} catch (error) {
-		// My filtersObject will collect the different filters
-		console.log(error.message)
-		res.status(400).json({ message: error.message })
-	}
-})
+        res.json({
+            count: count,
+            offers: offers,
+        });
+    } catch (error) {
+        console.log(error.message);
+        res.status(400).json({ message: error.message });
+    }
+});
 
 router.get("/offer/:id", async (req, res) => {
-	try {
-		const offer = await Offer.findById(req.params.id).populate({
-			path: "owner",
-			select: "account.username account.phone account.avatar",
-		})
-		res.json(offer)
-	} catch (error) {
-		console.log(error.message)
-		res.status(400).json({ message: error.message })
-	}
-})
+    try {
+        const offer = await Offer.findById(req.params.id).populate({
+            path: "owner",
+            select: "account.username account.phone account.avatar",
+        });
+        if (offer) {
+            res.json(offer);
+        } else {
+            res.status(404).json({ message: "Offer not found" });
+        }
+    } catch (error) {
+        console.log(error.message);
+        res.status(400).json({ message: error.message });
+    }
+});
 
 module.exports = router
