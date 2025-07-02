@@ -1,7 +1,7 @@
-# The backend of an online marketplace
+# The backend of an online marketplace application
 
-This is the backend of an online marketplace web application I built as a side project for a client. The full codebase is not available here for obvious reasons, but I saved a snapshot of the 
-repository halfway through with permission,  to showcase some of the technologies used.
+This is the backend of an online marketplace web application I built as a client project. The full codebase is not available here for obvious reasons, but I saved a snapshot of the 
+repository halfway through to showcase some of the technologies used.
 
 The Packages and technologies used are as follows.
 
@@ -15,6 +15,6 @@ Security and authentication:
   - Stripe
   - uid2
   - cors
-  - 
+
 Cloud based image server - Cloudinary
   
