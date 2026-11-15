@@ -35,4 +35,5 @@ const schema = new mongoose.Schema(
   { timestamps: true },
 );
 schema.index({ status: 1, createdAt: -1, _id: -1 });
+schema.index({ owner: 1, status: 1, createdAt: -1, _id: -1 });
 module.exports = mongoose.model("Offer", schema);

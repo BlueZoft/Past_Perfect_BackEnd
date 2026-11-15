@@ -1,4 +1,4 @@
-# PastPerfect API — v2
+# PastPerfect API — v2.1
 
 Express/MongoDB API for a Sri Lankan used-item marketplace. Version 2 repairs authentication, provides a consistent listing contract, validates browsing/uploads, and disables the unsafe prototype payment endpoint.
 
@@ -46,7 +46,9 @@ Cloudinary placeholders deliberately cannot activate that driver. Supply actual 
 - Mutations require an exact `Origin` match, including scripted clients. Browser credentials are enabled for that origin. Production frontend/API must be same-site; arbitrary cross-site hosting is not supported by these cookie settings.
 - Login/signup have an in-memory rate limiter. Multi-instance deployments need a shared limiter store and reviewed proxy/IP configuration. Do not blindly enable trust proxy.
 - Local images are limited to 3 files, 5 MB each, with JPEG/PNG/WebP signature checks. Production rejects the local driver. Files are held in bounded request memory; production should add image re-encoding, resource/concurrency limits and scanning where appropriate.
-- Public seller responses expose username/avatar, not email or session data. Uploads are compensated on failed creation; remote cleanup failures require operational monitoring/reconciliation.
-- Password reset, verification, profile/avatar updates, listing management, messaging, moderation, reservations and orders are not implemented yet.
+- Owner-scoped management enforces status transitions and optimistic concurrency using listing versions. Public seller responses expose username/avatar, not email or session data. Uploads are compensated on failed creation; remote cleanup failures require operational monitoring/reconciliation.
+- Password reset, verification, profile/avatar updates, photo replacement, messaging, moderation, buyer-specific reservations and orders are not implemented yet.
 
 See [API contract](docs/API.md), [action plan](docs/ACTION_PLAN.md) and [release notes](docs/V2.md). The v2 schema is breaking; existing prototype data is not migrated or deleted automatically.
+
+Version 2.1 seller management details, limitations and validation are recorded in [release notes](docs/V2.md).

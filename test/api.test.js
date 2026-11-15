@@ -213,6 +213,194 @@ test("API authentication, publishing, discovery and session lifecycle", async (t
         assert.equal((await request("/offer/bad")).status, 400);
       },
     );
+    const mutate = (method, url, body, session = cookie) =>
+      fetch(base + url, {
+        method,
+        headers: {
+          Origin: origin,
+          Cookie: session,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    await t.test(
+      "seller routes require authentication and isolate accounts",
+      async () => {
+        assert.equal(
+          (await request("/user/offers", undefined, "")).status,
+          401,
+        );
+        const signup = await request("/user/signup", {
+          email: "other@example.invalid",
+          username: "Other seller",
+          password: "another-safe-password",
+        });
+        const otherCookie = signup.headers.get("set-cookie").split(";")[0];
+        const own = await (await request("/user/offers")).json();
+        assert.equal(own.count, 2);
+        assert.equal(
+          (await (await request("/user/offers", undefined, otherCookie)).json())
+            .count,
+          0,
+        );
+        for (const [method, url, body] of [
+          [
+            "PATCH",
+            "/offer/" + id,
+            {
+              version: 0,
+              title: "Stolen title",
+              description: "Unauthorized edit",
+              price: 100,
+              condition: "Used",
+            },
+          ],
+          ["PATCH", "/offer/" + id + "/status", { version: 0, status: "sold" }],
+          ["DELETE", "/offer/" + id, { version: 0 }],
+        ])
+          assert.equal(
+            (await mutate(method, url, body, otherCookie)).status,
+            404,
+          );
+        assert.equal(
+          (await (await request("/offer/" + id)).json()).title,
+          "පරණ පොත",
+        );
+      },
+    );
+    await t.test(
+      "edits validate fields, preserve photos, and prevent concurrent overwrite",
+      async () => {
+        const before = await (await request("/offer/" + id)).json();
+        const fields = {
+          version: before.__v,
+          title: "Updated book",
+          description: "A detailed updated description",
+          price: 150,
+          condition: "Like New",
+          size: "",
+        };
+        assert.equal(
+          (
+            await mutate("PATCH", "/offer/" + id, {
+              ...fields,
+              owner: "000000000000000000000000",
+            })
+          ).status,
+          400,
+        );
+        assert.equal(
+          (await mutate("PATCH", "/offer/" + id, { ...fields, price: -5 }))
+            .status,
+          400,
+        );
+        assert.equal(
+          (
+            await mutate("PATCH", "/offer/" + id, {
+              ...fields,
+              version: undefined,
+            })
+          ).status,
+          400,
+        );
+        const results = await Promise.all([
+          mutate("PATCH", "/offer/" + id, fields),
+          mutate("PATCH", "/offer/" + id, fields),
+        ]);
+        assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+        const updated = await (await request("/offer/" + id)).json();
+        assert.equal(updated.price, 150);
+        assert.equal(updated.__v, before.__v + 1);
+        assert.deepEqual(updated.images, before.images);
+      },
+    );
+    await t.test(
+      "reservation and sold transitions change discovery and restrict edits",
+      async () => {
+        let listing = await (await request("/offer/" + id)).json();
+        let r = await mutate("PATCH", "/offer/" + id + "/status", {
+          version: listing.__v,
+          status: "reserved",
+        });
+        assert.equal(r.status, 200);
+        listing = await r.json();
+        assert.equal(
+          (await (await request("/offers?title=Updated")).json()).count,
+          0,
+        );
+        assert.equal(
+          (await (await request("/user/offers?status=reserved")).json()).count,
+          1,
+        );
+        r = await mutate("PATCH", "/offer/" + id + "/status", {
+          version: listing.__v,
+          status: "active",
+        });
+        assert.equal(r.status, 200);
+        listing = await r.json();
+        assert.equal(
+          (await (await request("/offers?title=Updated")).json()).count,
+          1,
+        );
+        r = await mutate("PATCH", "/offer/" + id + "/status", {
+          version: listing.__v,
+          status: "sold",
+        });
+        assert.equal(r.status, 200);
+        listing = await r.json();
+        assert.equal(
+          (
+            await mutate("PATCH", "/offer/" + id + "/status", {
+              version: listing.__v,
+              status: "active",
+            })
+          ).status,
+          409,
+        );
+        assert.equal(
+          (
+            await mutate("PATCH", "/offer/" + id, {
+              version: listing.__v,
+              title: "Sold edit",
+              description: "Editing sold item",
+              price: 1,
+              condition: "Used",
+            })
+          ).status,
+          409,
+        );
+        assert.equal(
+          (await (await request("/user/offers?status=sold")).json()).count,
+          1,
+        );
+        assert.equal(
+          (await request("/user/offers?status=removed")).status,
+          400,
+        );
+      },
+    );
+    await t.test(
+      "removal checks version and hides listing from public and seller results",
+      async () => {
+        const listing = await (await request("/offer/" + id)).json();
+        assert.equal(
+          (await mutate("DELETE", "/offer/" + id, { version: 0 })).status,
+          409,
+        );
+        assert.equal(
+          (await mutate("DELETE", "/offer/" + id, { version: listing.__v }))
+            .status,
+          204,
+        );
+        assert.equal((await request("/offer/" + id)).status, 404);
+        assert.equal((await (await request("/user/offers")).json()).count, 1);
+        assert.equal(
+          (await mutate("DELETE", "/offer/" + id, { version: listing.__v }))
+            .status,
+          404,
+        );
+      },
+    );
     await t.test("payment fails closed", async () => {
       assert.equal((await request("/payment", { amount: 1 })).status, 503);
     });

@@ -1,4 +1,4 @@
-# v2 action plan
+# v2.1 action plan
 
 ## Completed in this release
 
@@ -8,10 +8,11 @@
 4. Add server validation and bounded image uploads; provide local development storage and configurable Cloudinary.
 5. Disable unsafe payments; remove real/test gateway keys and fictional checkout fees.
 6. Add regression suites, repository CI workflows, environment examples and v2 documentation.
+7. Complete owner-only text/price editing, My Listings with pagination/status filters, reserve/release, mark sold, confirmed soft removal, and stale-update protection.
 
 ## Next: marketplace MVP
 
-- Owner-authorized listing edit/remove/reserve/mark-sold flows and My Listings UI.
+- Listing photo replacement and a documented retention/purge process for removed listing assets.
 - Categories with typed attributes, district/town discovery, seller profiles, favourites and buyer enquiries.
 - Verification, password recovery, report/block actions and an admin moderation queue.
 - Sinhala/Tamil/English interface translations, accessibility audit and mobile upload improvements.

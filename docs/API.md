@@ -39,3 +39,17 @@ All sample identifiers/content are illustrative placeholders. Cloudinary image U
 Publish fields: `title` (3–120 characters), `description` (10–4000), `price` (integer LKR, 1–1,000,000,000), `condition`, optional `size`, and 1–3 files under `picture1`, `picture2`, `picture3`. Unicode content is accepted. Conditions: `New with Tags`, `Like New`, `Fairly Used`, `Used`, `Worn`. Sizes: empty, XS, S, M, L, XL, XXL. The upper price bound is a configurable business-policy follow-up, not a researched market limit.
 
 Discovery query: `title` (literal case-insensitive search, maximum 120 characters), `priceMin`/`priceMax` (nonnegative integers), `sort` (`newest`, `price-asc`, `price-desc`), `page` (1–100000), `limit` (1–50, default 10). Response: `{count, page, limit, offers}`. Sorts include an ID tie-breaker. These filters are bounded but title search is not yet an indexed full-text service.
+
+
+## Seller management (v2.1)
+
+All routes require a session; mutations require the configured Origin. Listings include Mongoose's integer `__v`. Send that value as `version` for PATCH/DELETE; do not increment it client-side.
+
+| Method | Route | Contract |
+| --- | --- | --- |
+| GET | `/user/offers` | `{count,page,limit,offers}` for the current owner, excluding removed records. Supports existing title/price/sort/page/limit plus optional `status=active`, `reserved` or `sold`. |
+| PATCH | `/offer/:id` | JSON `{title,description,price,condition,size?,version}`; complete editable details required, photos retained. Returns updated listing. Only active/reserved listings. |
+| PATCH | `/offer/:id/status` | JSON `{status,version}`; active → reserved/sold, reserved → active/sold. Returns updated listing. |
+| DELETE | `/offer/:id` | JSON `{version}`; soft removal from any current state, returns 204. |
+
+Missing/invalid versions and unexpected fields return 400. Invalid transitions and stale updates return 409; reload the listing before retrying. Nonexistent, removed and other owners' listings return 404 for mutations. Anonymous requests return 401. Owner pagination defaults to 10 records and caps at 50. Removed assets are retained pending an explicit retention/purge policy; this is not permanent data erasure.

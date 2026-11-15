@@ -73,4 +73,76 @@ router.get(
     res.json(offer);
   }),
 );
+// Owner-scoped routes never accept an owner ID from the browser.
+const management = require("../services/listings");
+router.get(
+  "/user/offers",
+  auth,
+  asyncRoute(async (req, res) => {
+    const { filter, sort, page, limit } = listQuery(req.query);
+    filter.owner = req.user._id;
+    filter.status = { $ne: "removed" };
+    if (req.query.status) {
+      if (!["active", "reserved", "sold"].includes(req.query.status))
+        throw fail(400, "Invalid listing status");
+      filter.status = req.query.status;
+    }
+    const [offers, count] = await Promise.all([
+      Offer.find(filter)
+        .sort(sort)
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Offer.countDocuments(filter),
+    ]);
+    res.json({ offers, count, page, limit });
+  }),
+);
+router.patch(
+  "/offer/:id",
+  auth,
+  asyncRoute(async (req, res) => {
+    management.assertFields(req.body, [
+      "title",
+      "description",
+      "price",
+      "condition",
+      "size",
+      "version",
+    ]);
+    const version = management.version(req.body.version);
+    const listing = await management.owned(req.params.id, req.user._id);
+    if (!["active", "reserved"].includes(listing.status))
+      throw fail(409, "Sold listings cannot be edited");
+    const fields = validateListing(req.body);
+    res.json(await management.update(listing, version, fields));
+  }),
+);
+router.patch(
+  "/offer/:id/status",
+  auth,
+  asyncRoute(async (req, res) => {
+    management.assertFields(req.body, ["status", "version"]);
+    const version = management.version(req.body.version);
+    const listing = await management.owned(req.params.id, req.user._id);
+    if (
+      !management.transitions[listing.status]?.includes(req.body.status) ||
+      req.body.status === "removed"
+    )
+      throw fail(409, "Invalid listing status transition");
+    res.json(
+      await management.update(listing, version, { status: req.body.status }),
+    );
+  }),
+);
+router.delete(
+  "/offer/:id",
+  auth,
+  asyncRoute(async (req, res) => {
+    management.assertFields(req.body, ["version"]);
+    const version = management.version(req.body.version);
+    const listing = await management.owned(req.params.id, req.user._id);
+    await management.update(listing, version, { status: "removed" });
+    res.status(204).end();
+  }),
+);
 module.exports = router;
