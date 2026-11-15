@@ -43,3 +43,18 @@ Suspended users get a restricted session and `/account-status` UI. They can view
 The bundled example phrases are placeholders, not actual legal/business guidance. Replace notices/rules with reviewed operating policy. Terms match title/description case-insensitively after NFKC normalization; substring matching can need human review. It neither analyzes photos nor provides a legal classifier. Changes do not retroactively modify existing listings. Review matches are hidden pending `/admin/policy` review; approving or retaining a hidden listing is a versioned decision with an audit note. Edited text is evaluated again.
 
 Suspension hides public listings by checking seller eligibility in the query, without overwriting listing-specific moderation decisions. Restoring an account does not unhide separately moderated listings. Already-known image URLs and retained messages are not erased by suspension. No suspension or purge is run automatically by onboarding.
+
+
+## v2.6 image processing and local orphan reconciliation
+
+New image uploads decode through Sharp/libvips, normalize orientation, remove metadata and produce WebP at quality 80. Listing output is capped at 1920px on either axis, avatar output at 512px. Inputs are capped at 5 MB, 20 million pixels and 10,000px per dimension; animated/malformed images are rejected. Per-process image save concurrency is 2 and libvips cache is 32 MB. Deployments should still bound request/worker concurrency at the ingress and observe memory/429 rates; this does not install a scanner or infer whether item photos are prohibited.
+
+```sh
+npm run media:orphans                    # local storage preview only
+npm run media:orphans -- --apply         # explicit reviewed deletion via queue
+npm run media:orphans -- --after=CURSOR  # continue after returned nextCursor
+```
+
+The command requires `IMAGE_DRIVER=local` and the correct database/upload directory. `MEDIA_ORPHAN_GRACE_HOURS` defaults to 24, a starter operational choice. Only generated UUID `.webp`, `.png` or `.jpg` regular files older than the grace are candidates. Symlinks and unrelated filenames are skipped. Live listing and avatar references are checked before queueing and again before deletion. It retains at most 1000 candidate names in memory and returns `nextCursor` when another batch exists. Start a new full pass after finishing a cursor sequence to catch files added earlier in the ordering. Deletion drains at most 100 jobs, so queued and deleted counts may differ; use retention maintenance to drain remaining jobs.
+
+Dry runs do not queue or delete files. Applying is explicit, and no production orphan scan or cron was installed. Keep backups and choose an appropriate grace for stalled uploads; reference checks and grace reduce in-flight races but cannot substitute for transaction-aware provider inventory. Remote Cloudinary orphan enumeration is not implemented. Run tests with disposable databases; production URLs/secrets are never needed for the local scan tests.

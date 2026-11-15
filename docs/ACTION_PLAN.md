@@ -1,4 +1,4 @@
-# v2.5 action plan
+# v2.6 action plan
 
 ## Completed in this release
 
@@ -13,18 +13,19 @@
 9. Add owner-only whole-set photo replacement, versioned avatars, retryable retired-media cleanup and dry-run retention tooling, report/block controls and an allowlisted admin moderation queue.
 10. Complete email verification and single-use password recovery with session invalidation, English/Sinhala/Tamil application and email translations, and private in-app notifications with unread/read controls.
 11. Add suspension/restoration and restricted account sessions, atomic owner-scoped appeals, suspension-aware public discovery, and configurable prohibited-item rejection/review workflows.
+12. Add decoded/resized metadata-free image output, local orphan reconciliation, configurable typed category fields, skip navigation, route focus, mobile layouts and automated DOM accessibility checks.
 
 ## Next: marketplace MVP
 
-- Production scheduling/monitoring of media maintenance, orphan reconciliation after process crashes, and image re-encoding/scanning.
-- Additional category-specific attributes beyond clothing size, production geography configuration, and optional realtime messaging/Web Push delivery.
+- Production scheduling/monitoring, remote-provider orphan reconciliation, malware scanning and deployment resource controls.
+- Reviewed production geography/catalogue configuration, indexed advanced search and optional realtime messaging/Web Push delivery.
 - Production SMTP credentials, reviewed real marketplace policy, audit archival, administrator MFA and further moderation tooling.
-- Accessibility audit, mobile upload improvements and ongoing translation review as features grow.
+- Manual assistive-technology, contrast and device testing; ongoing accessibility and translation review as features grow.
 
 ## Later: managed transactions
 
 - Validate actual provider/business requirements; replace documented placeholders securely.
 - Orders, reservations, authoritative pricing, verified webhooks, delivery, refunds and disputes.
-- Transaction-linked reviews, notifications, saved searches and seller analytics.
+- Transaction-linked reviews, order/delivery notifications, saved searches and seller analytics.
 
 This release does not claim these future capabilities. No present-day market research or existing-data migration is required for this implementation. Keep each README and API/configuration documentation synchronized with future changes.

@@ -9,6 +9,11 @@ const schema = new mongoose.Schema(
       maxlength: 4000,
     },
     price: { type: Number, required: true, min: 1, max: 1000000000 },
+    attributes: {
+      type: Map,
+      of: mongoose.Schema.Types.Mixed,
+      default: () => ({}),
+    },
     category: {
       type: String,
       enum: require("../lib/catalogue").catalogue.categories,
@@ -31,6 +36,9 @@ const schema = new mongoose.Schema(
       {
         url: String,
         publicId: String,
+        width: Number,
+        height: Number,
+        bytes: Number,
         driver: { type: String, enum: ["local", "cloudinary"] },
       },
     ],

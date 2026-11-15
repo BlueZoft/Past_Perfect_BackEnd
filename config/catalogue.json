@@ -1,6 +1,100 @@
 {
-  "categories": ["other", "clothing", "electronics", "furniture", "books"],
+  "categories": [
+    "other",
+    "clothing",
+    "electronics",
+    "furniture",
+    "books"
+  ],
   "locations": [
-    {"id": "sample-district", "label": "Example district (placeholder)", "towns": ["Example town"]}
-  ]
+    {
+      "id": "sample-district",
+      "label": "Example district (placeholder)",
+      "towns": [
+        "Example town"
+      ]
+    }
+  ],
+  "attributes": {
+    "electronics": [
+      {
+        "key": "brand",
+        "type": "text",
+        "maxLength": 80,
+        "label": {
+          "en": "Brand",
+          "si": "වෙළඳ නාමය",
+          "ta": "வணிகப் பெயர்"
+        }
+      },
+      {
+        "key": "model",
+        "type": "text",
+        "maxLength": 80,
+        "label": {
+          "en": "Model",
+          "si": "මාදිලිය",
+          "ta": "மாதிரி"
+        }
+      }
+    ],
+    "furniture": [
+      {
+        "key": "widthCm",
+        "type": "number",
+        "min": 1,
+        "max": 10000,
+        "label": {
+          "en": "Width (cm)",
+          "si": "පළල (සෙ.මී.)",
+          "ta": "அகலம் (செ.மீ.)"
+        }
+      },
+      {
+        "key": "heightCm",
+        "type": "number",
+        "min": 1,
+        "max": 10000,
+        "label": {
+          "en": "Height (cm)",
+          "si": "උස (සෙ.මී.)",
+          "ta": "உயரம் (செ.மீ.)"
+        }
+      }
+    ],
+    "books": [
+      {
+        "key": "author",
+        "type": "text",
+        "maxLength": 120,
+        "label": {
+          "en": "Author",
+          "si": "කර්තෘ",
+          "ta": "ஆசிரியர்"
+        }
+      },
+      {
+        "key": "isbn",
+        "type": "text",
+        "maxLength": 20,
+        "label": {
+          "en": "ISBN",
+          "si": "ISBN",
+          "ta": "ISBN"
+        }
+      }
+    ],
+    "clothing": [
+      {
+        "key": "brand",
+        "type": "text",
+        "maxLength": 80,
+        "label": {
+          "en": "Brand",
+          "si": "වෙළඳ නාමය",
+          "ta": "வணிகப் பெயர்"
+        }
+      }
+    ]
+  }
 }

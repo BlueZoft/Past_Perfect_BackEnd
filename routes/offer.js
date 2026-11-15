@@ -7,7 +7,7 @@ const { asyncRoute, fail } = require("../lib/http");
 const { validateListing, listQuery } = require("../lib/listings");
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 3, fields: 9, fieldSize: 16000 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 3, fields: 10, fieldSize: 16000 },
 }).fields([
   { name: "picture1", maxCount: 1 },
   { name: "picture2", maxCount: 1 },
@@ -46,7 +46,7 @@ router.post(
       });
       res.status(201).json(offer);
     } catch (err) {
-      await Promise.allSettled(saved.map((image) => images.remove(image)));
+      await require("../services/mediaCleanup").cleanup(saved);
       throw err;
     }
   }),
@@ -119,6 +119,7 @@ router.patch(
       "size",
       "version",
       "category",
+      "attributes",
       "district",
       "town",
     ]);

@@ -1,13 +1,14 @@
 {
   "name": "pastperfect",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "node --test test/*.test.js",
-    "media:maintenance": "node scripts/media-maintenance.js"
+    "media:maintenance": "node scripts/media-maintenance.js",
+    "media:orphans": "node scripts/media-orphans.js"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +24,7 @@
     "mongoose": "^6.1.7",
     "multer": "^2.5.0",
     "nodemailer": "^7.0.13",
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.7",
+    "sharp": "^0.34.5"
   }
 }

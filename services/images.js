@@ -1,6 +1,10 @@
 const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
+const sharp = require("sharp");
+sharp.concurrency(2);
+sharp.cache({ memory: 32, files: 0, items: 32 });
+let active = 0;
 const FileType = require("file-type");
 const cloudinary = require("cloudinary").v2;
 const { fail } = require("../lib/http");
@@ -28,33 +32,98 @@ if (driver === "cloudinary") {
 exports.directory = directory;
 exports.driver = driver;
 exports.validate = async (file) => {
-  const type = await FileType.fromBuffer(file.buffer);
+  if (
+    !file ||
+    !Buffer.isBuffer(file.buffer) ||
+    file.buffer.length > 5 * 1024 * 1024
+  )
+    throw fail(400, "Image must be at most 5 MB");
+  let type;
+  try {
+    type = await FileType.fromBuffer(file.buffer);
+  } catch {
+    throw fail(400, "Image is invalid, animated or too large");
+  }
   if (!type || !["image/jpeg", "image/png", "image/webp"].includes(type.mime))
     throw fail(400, "Only JPEG, PNG and WebP images are supported");
-  return type;
+  try {
+    const meta = await sharp(file.buffer, {
+      limitInputPixels: 20000000,
+      failOn: "warning",
+      animated: true,
+    }).metadata();
+    if (
+      !meta.width ||
+      !meta.height ||
+      meta.width > 10000 ||
+      meta.height > 10000 ||
+      (meta.pages || 1) > 1
+    )
+      throw new Error("Unsupported dimensions");
+    return meta;
+  } catch {
+    throw fail(400, "Image is invalid, animated or too large");
+  }
 };
-exports.save = async (file) => {
-  const type = await exports.validate(file);
-  if (driver === "cloudinary")
-    return new Promise((resolve, reject) => {
-      cloudinary.uploader
-        .upload_stream(
-          { folder: "pastperfect/listings", resource_type: "image" },
-          (err, result) =>
-            err
-              ? reject(err)
-              : resolve({
-                  url: result.secure_url,
-                  publicId: result.public_id,
-                  driver,
-                }),
-        )
-        .end(file.buffer);
+exports.save = async (file, options = {}) => {
+  if (active >= 2)
+    throw fail(429, "Image processing is busy. Please try again.");
+  active++;
+  try {
+    await exports.validate(file);
+    let output;
+    try {
+      output = await sharp(file.buffer, {
+        limitInputPixels: 20000000,
+        failOn: "warning",
+      })
+        .rotate()
+        .resize({
+          width: options.avatar ? 512 : 1920,
+          height: options.avatar ? 512 : 1920,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality: 80, effort: 4 })
+        .toBuffer({ resolveWithObject: true });
+    } catch {
+      throw fail(400, "Image is invalid, animated or too large");
+    }
+    const metadata = {
+      driver,
+      width: output.info.width,
+      height: output.info.height,
+      bytes: output.data.length,
+    };
+    if (driver === "cloudinary")
+      return await new Promise((resolve, reject) =>
+        cloudinary.uploader
+          .upload_stream(
+            {
+              folder:
+                "pastperfect/" + (options.avatar ? "avatars" : "listings"),
+              resource_type: "image",
+            },
+            (err, result) =>
+              err
+                ? reject(err)
+                : resolve({
+                    url: result.secure_url,
+                    publicId: result.public_id,
+                    ...metadata,
+                  }),
+          )
+          .end(output.data),
+      );
+    await fs.mkdir(directory, { recursive: true });
+    const publicId = crypto.randomUUID() + ".webp";
+    await fs.writeFile(path.join(directory, publicId), output.data, {
+      flag: "wx",
     });
-  await fs.mkdir(directory, { recursive: true });
-  const publicId = crypto.randomUUID() + "." + type.ext;
-  await fs.writeFile(path.join(directory, publicId), file.buffer);
-  return { url: "/uploads/" + publicId, publicId, driver };
+    return { url: "/uploads/" + publicId, publicId, ...metadata };
+  } finally {
+    active--;
+  }
 };
 exports.remove = async (image) => {
   if (image.driver && image.driver !== driver)

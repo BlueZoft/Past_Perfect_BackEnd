@@ -1,4 +1,4 @@
-# PastPerfect API — v2.5
+# PastPerfect API — v2.6
 
 Express/MongoDB API for a Sri Lankan used-item marketplace. Version 2 repairs authentication, provides a consistent listing contract, validates browsing/uploads, and disables the unsafe prototype payment endpoint.
 
@@ -45,7 +45,7 @@ Cloudinary placeholders deliberately cannot activate that driver. Supply actual 
 - Sessions last 24 hours, use random cookies with HttpOnly/SameSite=Strict, store only SHA-256 token digests, and are checked for expiry on every authenticated request. Logout revokes the current session. Production cookies are Secure.
 - Mutations require an exact `Origin` match, including scripted clients. Browser credentials are enabled for that origin. Production frontend/API must be same-site; arbitrary cross-site hosting is not supported by these cookie settings.
 - Login/signup have an in-memory rate limiter. Multi-instance deployments need a shared limiter store and reviewed proxy/IP configuration. Do not blindly enable trust proxy.
-- Local images are limited to 3 files, 5 MB each, with JPEG/PNG/WebP signature checks. Production rejects the local driver. Files are held in bounded request memory; production should add image re-encoding, resource/concurrency limits and scanning where appropriate.
+- Local images are limited to 3 files, 5 MB each, with JPEG/PNG/WebP signature and decode checks. Images are re-encoded to metadata-free WebP, listings up to 1920px and avatars up to 512px. Production rejects the local driver. Processing is bounded per process; production still needs ingress/resource monitoring and malware scanning where appropriate.
 - Owner-scoped management enforces status transitions and optimistic concurrency using listing versions. Public seller responses expose username/avatar, not email or session data. Replacement media is compensated on failed updates. Retired media is queued for deletion, with reference checks and retryable failures; see the operations guide for remaining crash/orphan reconciliation limitations.
 - Realtime messaging, Web Push, buyer-specific reservations and orders are not implemented yet.
 
@@ -64,3 +64,5 @@ See [v2.3 release notes](docs/V2.md) for media, reporting/blocking and moderatio
 Version 2.4 completes email verification and password recovery, private in-app notifications, and localized email templates. Copy the example environment without overwriting existing settings, use `MAIL_DRIVER=local` for development, and read the private `.mail-outbox/` files as local emails. Production requires actual SMTP settings; the included values are placeholders. See [account and notification setup](docs/ACCOUNTS.md).
 
 Version 2.5 adds restricted suspended-account sessions, versioned suspension/restoration, user appeals with atomic admin decisions, and configurable prohibited-item rejection/review queues. Bundled policy rules are labelled placeholders; replace them before launch. See [release notes](docs/V2.md).
+
+Version 2.6 adds decoded/resized WebP uploads, conservative dry-run local orphan reconciliation, configurable typed category attributes, skip navigation/route focus, larger touch targets and responsive form/listing layouts. See [release notes](docs/V2.md).

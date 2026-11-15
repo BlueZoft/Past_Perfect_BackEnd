@@ -160,6 +160,8 @@ test("API authentication, publishing, discovery and session lifecycle", async (t
           condition: "Used",
         }))
           form.set(key, value);
+        form.set("category", "books");
+        form.set("attributes", JSON.stringify({ author: "Example author" }));
         const png = Buffer.from(
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
           "base64",
@@ -178,6 +180,7 @@ test("API authentication, publishing, discovery and session lifecycle", async (t
         const body = await r.json();
         id = body._id;
         assert.equal(body.currency, "LKR");
+        assert.equal(body.attributes.author, "Example author");
         assert.equal(body.owner.account.username, "Tester");
         const detail = await (await request("/offer/" + id)).json();
         assert.equal(detail.title, "පරණ පොත");

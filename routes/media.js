@@ -48,7 +48,7 @@ router.put(
     const expected = version(req.body);
     if (req.files?.length !== 1)
       throw fail(400, "One avatar image is required");
-    const saved = await images.save(req.files[0]);
+    const saved = await images.save(req.files[0], { avatar: true });
     let user;
     try {
       await cleanup.schedule(
