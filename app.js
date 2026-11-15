@@ -37,6 +37,7 @@ app.use(
 app.use(require("./routes/user"));
 app.use(require("./routes/offer"));
 app.use(require("./routes/payment"));
+app.use(require("./routes/community"));
 app.get("/", (req, res) => res.json("Welcome to the PastPerfect API"));
 app.use((req, res) => res.status(404).json({ error: "Not found" }));
 app.use((err, req, res, next) => {
@@ -44,15 +45,13 @@ app.use((err, req, res, next) => {
     err.code === 11000
       ? 409
       : err.status || (err.name === "ValidationError" ? 400 : 500);
-  res
-    .status(status)
-    .json({
-      error:
-        err.code === 11000
-          ? "Email already registered"
-          : status >= 500
-            ? "Service unavailable"
-            : err.message,
-    });
+  res.status(status).json({
+    error:
+      err.code === 11000
+        ? "A record with these details already exists"
+        : status >= 500
+          ? "Service unavailable"
+          : err.message,
+  });
 });
 module.exports = app;

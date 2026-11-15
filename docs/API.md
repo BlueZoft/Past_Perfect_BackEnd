@@ -53,3 +53,26 @@ All routes require a session; mutations require the configured Origin. Listings 
 | DELETE | `/offer/:id` | JSON `{version}`; soft removal from any current state, returns 204. |
 
 Missing/invalid versions and unexpected fields return 400. Invalid transitions and stale updates return 409; reload the listing before retrying. Nonexistent, removed and other owners' listings return 404 for mutations. Anonymous requests return 401. Owner pagination defaults to 10 records and caps at 50. Removed assets are retained pending an explicit retention/purge policy; this is not permanent data erasure.
+
+
+## Community API (v2.2)
+
+Listing requests/responses additionally support `category` (default `other`), `district` and `town` (default empty). Discovery and owner-list queries accept the same filters. Values must come from GET `/catalogue`; town requires its configured district. `size` is valid only for `category=clothing`. Multipart publishing supports these three additional fields.
+
+| Method | Route | Contract |
+| --- | --- | --- |
+| GET | `/catalogue` | Public `{categories,locations}`; see CATALOGUE.md for placeholder policy |
+| GET | `/seller/:id` | Public `{seller,offers,count,page,limit}` with active listings and safe seller fields; supports normal listing filters |
+| PATCH | `/user/profile` | Session + Origin; `{username,bio}` only; updates current user and returns public account response (including their own email) |
+| GET | `/user/favourites` | Private `{offers,count,page,limit}`, excluding removed/deleted listings; supports page/limit |
+| GET | `/user/favourites/:id` | Private `{saved:boolean}` |
+| PUT | `/user/favourites/:id` | Save visible listing idempotently, 204; no body required |
+| DELETE | `/user/favourites/:id` | Remove own saved entry idempotently, 204; no body required |
+| POST | `/offer/:id/enquiries` | `{message}` → 201 `{_id:threadId}`; seller derived from active listing, buyer from session |
+| GET | `/user/enquiries` | Private `{enquiries,count,page,limit}` inbox sorted by latest message; page/limit |
+| GET | `/enquiry/:id/messages` | Participant-only `{enquiry,messages,count,page,limit}`, oldest-first, page/limit |
+| POST | `/enquiry/:id/messages` | Participant-only `{message}` → 201 message |
+
+All community mutations require exact Origin matching. Unknown profile/message fields are rejected. Public seller fields are `_id`, username/avatar/bio and joined timestamp; email/hash are excluded. Username is 1–80 characters, bio 0–1000. Messages are trimmed, 1–2000 characters; write limit is 60 requests/hour per IP using a process-local store. Threads expose buyer/seller IDs and usernames only. Another account receives 404 for thread reads/replies. Anonymous private requests receive 401. New enquiries require active listings and cannot target your own listing. Existing participants can continue after removal/sale; the retained title is a historical snapshot.
+
+Favourites remain private: response counts include only visible saved records, never another user's data. PUT/DELETE do not infer ownership from request bodies. Unique indexes enforce one favourite per user/listing and one enquiry thread per buyer/listing. Message sends are not idempotent; clients should refresh before retrying after an ambiguous network failure. Avatar editing, realtime delivery, blocking/reporting and moderation are follow-ups.

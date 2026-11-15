@@ -13,6 +13,7 @@ module.exports = mongoose.model(
       account: {
         username: { type: String, required: true, maxlength: 80 },
         avatar: Object,
+        bio: { type: String, maxlength: 1000, default: "" },
       },
       hash: { type: String, required: true, select: false },
     },

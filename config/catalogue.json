@@ -1,0 +1,6 @@
+{
+  "categories": ["other", "clothing", "electronics", "furniture", "books"],
+  "locations": [
+    {"id": "sample-district", "label": "Example district (placeholder)", "towns": ["Example town"]}
+  ]
+}

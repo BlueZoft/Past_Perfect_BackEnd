@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
+process.env.CATALOGUE_FILE = path.join(__dirname, "../config/catalogue.json");
 const { listQuery, validateListing } = require("../lib/listings");
 test("search treats regex characters literally and bounds queries", () => {
   const regex = listQuery({ title: ".*[x]" }).filter.title;

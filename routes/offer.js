@@ -7,7 +7,7 @@ const { asyncRoute, fail } = require("../lib/http");
 const { validateListing, listQuery } = require("../lib/listings");
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 3, fields: 6, fieldSize: 16000 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 3, fields: 9, fieldSize: 16000 },
 }).fields([
   { name: "picture1", maxCount: 1 },
   { name: "picture2", maxCount: 1 },
@@ -108,6 +108,9 @@ router.patch(
       "condition",
       "size",
       "version",
+      "category",
+      "district",
+      "town",
     ]);
     const version = management.version(req.body.version);
     const listing = await management.owned(req.params.id, req.user._id);
