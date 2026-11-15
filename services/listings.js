@@ -2,7 +2,8 @@ const Offer = require("../models/Offer");
 const { fail } = require("../lib/http");
 
 exports.validateId = (id) => {
-  if (!/^[a-fA-F0-9]{24}$/.test(id)) throw fail(400, "Invalid listing ID");
+  if (typeof id !== "string" || !/^[a-fA-F0-9]{24}$/.test(id))
+    throw fail(400, "Invalid listing ID");
 };
 exports.assertFields = (body, allowed) => {
   if (
@@ -35,6 +36,9 @@ exports.update = async (listing, version, fields) => {
       owner: listing.owner,
       __v: version,
       status: { $ne: "removed" },
+      ...(fields.status === "removed"
+        ? {}
+        : { moderationHidden: { $ne: true } }),
     },
     { $set: fields, $inc: { __v: 1 } },
     { new: true, runValidators: true },

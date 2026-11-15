@@ -15,6 +15,7 @@ module.exports = mongoose.model(
         avatar: Object,
         bio: { type: String, maxlength: 1000, default: "" },
       },
+      avatarVersion: { type: Number, default: 0 },
       hash: { type: String, required: true, select: false },
     },
     { timestamps: true },

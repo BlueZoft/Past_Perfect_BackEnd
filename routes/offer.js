@@ -68,6 +68,7 @@ router.get(
     const offer = await Offer.findOne({
       _id: req.params.id,
       status: { $ne: "removed" },
+      moderationHidden: { $ne: true },
     }).populate("owner", "account.username account.avatar");
     if (!offer) throw fail(404, "Listing not found");
     res.json(offer);
@@ -81,6 +82,7 @@ router.get(
   asyncRoute(async (req, res) => {
     const { filter, sort, page, limit } = listQuery(req.query);
     filter.owner = req.user._id;
+    delete filter.moderationHidden;
     filter.status = { $ne: "removed" };
     if (req.query.status) {
       if (!["active", "reserved", "sold"].includes(req.query.status))
@@ -114,8 +116,11 @@ router.patch(
     ]);
     const version = management.version(req.body.version);
     const listing = await management.owned(req.params.id, req.user._id);
-    if (!["active", "reserved"].includes(listing.status))
-      throw fail(409, "Sold listings cannot be edited");
+    if (
+      listing.moderationHidden ||
+      !["active", "reserved"].includes(listing.status)
+    )
+      throw fail(409, "This listing is sold or hidden and cannot be edited");
     const fields = validateListing(req.body);
     res.json(await management.update(listing, version, fields));
   }),
@@ -128,6 +133,7 @@ router.patch(
     const version = management.version(req.body.version);
     const listing = await management.owned(req.params.id, req.user._id);
     if (
+      listing.moderationHidden ||
       !management.transitions[listing.status]?.includes(req.body.status) ||
       req.body.status === "removed"
     )
@@ -144,8 +150,20 @@ router.delete(
     management.assertFields(req.body, ["version"]);
     const version = management.version(req.body.version);
     const listing = await management.owned(req.params.id, req.user._id);
-    await management.update(listing, version, { status: "removed" });
+    await management.update(listing, version, {
+      status: "removed",
+      removedAt: new Date(),
+    });
     res.status(204).end();
+  }),
+);
+router.get(
+  "/user/offers/:id",
+  auth,
+  asyncRoute(async (req, res) => {
+    const listing = await management.owned(req.params.id, req.user._id);
+    await listing.populate("owner", "account.username account.avatar");
+    res.json(listing);
   }),
 );
 module.exports = router;

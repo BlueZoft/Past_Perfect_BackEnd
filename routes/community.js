@@ -59,7 +59,7 @@ router.patch(
       { $set: { "account.username": username, "account.bio": bio } },
       { new: true, runValidators: true },
     );
-    res.json({ _id: user._id, email: user.email, account: user.account });
+    res.json(require("../services/publicUser")(user));
   }),
 );
 router.get(
@@ -79,7 +79,13 @@ router.get(
         },
       },
       { $unwind: "$offer" },
-      { $match: { "offer.status": { $ne: "removed" } } },
+      { $project: { "offer.moderationAudit": 0 } },
+      {
+        $match: {
+          "offer.status": { $ne: "removed" },
+          "offer.moderationHidden": { $ne: true },
+        },
+      },
       {
         $facet: {
           items: [{ $skip: (page - 1) * limit }, { $limit: limit }],
@@ -116,6 +122,7 @@ router.put(
     const listing = await Offer.findOne({
       _id: req.params.id,
       status: { $ne: "removed" },
+      moderationHidden: { $ne: true },
     });
     if (!listing) throw fail(404, "Listing not found");
     try {
@@ -180,12 +187,17 @@ router.post(
     const listing = await Offer.findOne({
       _id: req.params.id,
       status: "active",
+      moderationHidden: { $ne: true },
     });
     if (!listing) throw fail(404, "Active listing not found");
     if (String(listing.owner) === String(req.user._id))
       throw fail(400, "You cannot enquire about your own listing");
     const owner = await User.exists({ _id: listing.owner });
     if (!owner) throw fail(404, "Seller unavailable");
+    await require("../services/blocks").assertMessaging(
+      req.user._id,
+      listing.owner,
+    );
     let enquiry;
     try {
       enquiry = await Enquiry.findOneAndUpdate(
@@ -254,6 +266,10 @@ router.post(
   asyncRoute(async (req, res) => {
     const value = text(req.body);
     const enquiry = await participant(req.params.id, req.user._id);
+    await require("../services/blocks").assertMessaging(
+      enquiry.buyer,
+      enquiry.seller,
+    );
     res.status(201).json(await send(enquiry, req.user._id, value));
   }),
 );

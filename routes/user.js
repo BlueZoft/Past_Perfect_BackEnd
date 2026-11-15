@@ -4,11 +4,7 @@ const User = require("../models/User");
 const auth = require("../middleware/isAuthenticated");
 const { issue, cookieOptions } = require("../services/session");
 const { asyncRoute, fail } = require("../lib/http");
-const publicUser = (user) => ({
-  _id: user._id,
-  email: user.email,
-  account: user.account,
-});
+const publicUser = require("../services/publicUser");
 function credentials(body) {
   if (
     typeof body.email !== "string" ||

@@ -76,3 +76,27 @@ Listing requests/responses additionally support `category` (default `other`), `d
 All community mutations require exact Origin matching. Unknown profile/message fields are rejected. Public seller fields are `_id`, username/avatar/bio and joined timestamp; email/hash are excluded. Username is 1–80 characters, bio 0–1000. Messages are trimmed, 1–2000 characters; write limit is 60 requests/hour per IP using a process-local store. Threads expose buyer/seller IDs and usernames only. Another account receives 404 for thread reads/replies. Anonymous private requests receive 401. New enquiries require active listings and cannot target your own listing. Existing participants can continue after removal/sale; the retained title is a historical snapshot.
 
 Favourites remain private: response counts include only visible saved records, never another user's data. PUT/DELETE do not infer ownership from request bodies. Unique indexes enforce one favourite per user/listing and one enquiry thread per buyer/listing. Message sends are not idempotent; clients should refresh before retrying after an ambiguous network failure. Avatar editing, realtime delivery, blocking/reporting and moderation are follow-ups.
+
+
+## Media and trust API (v2.3)
+
+| Method | Route | Contract |
+| --- | --- | --- |
+| GET | `/user/offers/:id` | Owner-only current listing, including moderation-hidden listings; 404 for other owners/removed records |
+| PUT | `/offer/:id/images` | Owner session + multipart `version` and repeated `images` files (1–3); whole-set replacement, returns listing with new `__v` |
+| PUT | `/user/avatar` | Session + multipart `version` and one `avatar` file; returns private user response with new `avatarVersion` |
+| DELETE | `/user/avatar` | Session + JSON `{version}`; removes avatar and increments version |
+| GET | `/user/blocks` | Own paginated `{blocks,count,page,limit}` with blocked users' public names |
+| GET | `/user/blocks/:id` | Own `{blocked:boolean}` state only |
+| PUT / DELETE | `/user/blocks/:id` | Idempotent block/unblock, 204; self-blocking rejected |
+| POST | `/reports` | JSON `{targetType,target,reason,details}` → 201 `{_id,status}` |
+| GET | `/admin/reports` | Admin-only paginated queue, `status=open|resolved|dismissed` |
+| PATCH | `/admin/reports/:id` | Admin-only `{status,resolution,version}`; open → resolved/dismissed, returns report |
+| GET | `/admin/offers/:id` | Admin-only listing with moderation audit |
+| PATCH | `/admin/offers/:id/moderation` | Admin-only `{hidden:boolean,reason,version}`; returns updated listing/audit |
+
+All mutations require exact Origin matching. Media is JPEG/PNG/WebP, signature-checked, at most 5 MB/file. Multipart versions are decimal strings; JSON versions are integers. Concurrent/stale changes return 409. Sold/hidden listings cannot be edited/replaced/reactivated by owners, but can be removed. Removal records `removedAt` for explicit retention processing. Private user responses include `avatarVersion` and server-computed `isAdmin`; neither grants client-controlled privileges.
+
+Reports: targetType is `listing`, `user` or `message`; target is an ObjectId string. Reasons: `scam`, `prohibited-item`, `harassment`, `spam`, `other`. Details are a string up to 2000 characters. Self-reports are rejected; message reports require conversation participation and another sender. A target snapshot is kept for admins. Report writes are limited to 30/hour/IP. Repeat reporter/target submissions return the original report. Admin resolution notes are required (up to 2000 characters); visibility reasons are required (up to 1000). Resolving/dismissing reports and hiding/restoring listings are independent operations.
+
+Blocking causes both new enquiries and replies between the accounts to return 403; old history remains readable by its participants. Block data is private. Admin APIs return 403 for ordinary users and 401 without a session. Visibility audit data is excluded from public details and favourite aggregates. Hidden listings return public 404 and are excluded from public counts, favourites and seller discovery. Existing private enquiry history remains accessible.

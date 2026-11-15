@@ -38,6 +38,8 @@ app.use(require("./routes/user"));
 app.use(require("./routes/offer"));
 app.use(require("./routes/payment"));
 app.use(require("./routes/community"));
+app.use(require("./routes/media"));
+app.use(require("./routes/safety"));
 app.get("/", (req, res) => res.json("Welcome to the PastPerfect API"));
 app.use((req, res) => res.status(404).json({ error: "Not found" }));
 app.use((err, req, res, next) => {

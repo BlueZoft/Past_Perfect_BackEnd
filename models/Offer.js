@@ -27,12 +27,31 @@ const schema = new mongoose.Schema(
       required: true,
       enum: ["New with Tags", "Like New", "Fairly Used", "Used", "Worn"],
     },
-    images: [{ url: String, publicId: String }],
+    images: [
+      {
+        url: String,
+        publicId: String,
+        driver: { type: String, enum: ["local", "cloudinary"] },
+      },
+    ],
     status: {
       type: String,
       enum: ["active", "reserved", "sold", "removed"],
       default: "active",
     },
+    moderationHidden: { type: Boolean, default: false },
+    moderationAudit: {
+      type: [
+        {
+          actor: mongoose.Schema.Types.ObjectId,
+          hidden: Boolean,
+          reason: String,
+          at: Date,
+        },
+      ],
+      select: false,
+    },
+    removedAt: Date,
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

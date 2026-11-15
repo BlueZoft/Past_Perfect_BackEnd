@@ -26,6 +26,7 @@ if (driver === "cloudinary") {
   });
 }
 exports.directory = directory;
+exports.driver = driver;
 exports.validate = async (file) => {
   const type = await FileType.fromBuffer(file.buffer);
   if (!type || !["image/jpeg", "image/png", "image/webp"].includes(type.mime))
@@ -42,16 +43,22 @@ exports.save = async (file) => {
           (err, result) =>
             err
               ? reject(err)
-              : resolve({ url: result.secure_url, publicId: result.public_id }),
+              : resolve({
+                  url: result.secure_url,
+                  publicId: result.public_id,
+                  driver,
+                }),
         )
         .end(file.buffer);
     });
   await fs.mkdir(directory, { recursive: true });
   const publicId = crypto.randomUUID() + "." + type.ext;
   await fs.writeFile(path.join(directory, publicId), file.buffer);
-  return { url: "/uploads/" + publicId, publicId };
+  return { url: "/uploads/" + publicId, publicId, driver };
 };
 exports.remove = async (image) => {
+  if (image.driver && image.driver !== driver)
+    throw new Error("Run cleanup with the original storage driver");
   if (driver === "cloudinary")
     await cloudinary.uploader.destroy(image.publicId);
   else

@@ -1,4 +1,4 @@
-# v2.2 action plan
+# v2.3 action plan
 
 ## Completed in this release
 
@@ -10,12 +10,13 @@
 6. Add regression suites, repository CI workflows, environment examples and v2 documentation.
 7. Complete owner-only text/price editing, My Listings with pagination/status filters, reserve/release, mark sold, confirmed soft removal, and stale-update protection.
 8. Add configurable categories and district/town discovery, public seller profiles and username/bio editing, private favourites, buyer enquiry inboxes and participant-only replies.
+9. Add owner-only whole-set photo replacement, versioned avatars, retryable retired-media cleanup and dry-run retention tooling, report/block controls and an allowlisted admin moderation queue.
 
 ## Next: marketplace MVP
 
-- Listing photo replacement and a documented retention/purge process for removed listing assets.
-- Additional category-specific attributes beyond clothing size, production geography configuration, avatar uploads, and enquiry notifications/realtime updates.
-- Verification, password recovery, report/block actions and an admin moderation queue.
+- Production scheduling/monitoring of media maintenance, orphan reconciliation after process crashes, and image re-encoding/scanning.
+- Additional category-specific attributes beyond clothing size, production geography configuration, and enquiry notifications/realtime updates.
+- Verification, password recovery, account suspension/appeals, prohibited-item policy configuration and advanced moderation tools.
 - Sinhala/Tamil/English interface translations, accessibility audit and mobile upload improvements.
 
 ## Later: managed transactions
