@@ -24,6 +24,7 @@ router.post(
     }),
   asyncRoute(async (req, res) => {
     const listing = validateListing(req.body);
+    const policy = require("../lib/policy").evaluate(listing);
     const files = ["picture1", "picture2", "picture3"].flatMap(
       (key) => req.files?.[key] || [],
     );
@@ -34,10 +35,15 @@ router.post(
       for (const file of files) saved.push(await images.save(file));
       const offer = await Offer.create({
         ...listing,
+        ...policy,
         images: saved,
         owner: req.user._id,
       });
-      await offer.populate("owner", "account.username account.avatar");
+      await offer.populate({
+        path: "owner",
+        select: "account.username account.avatar",
+        match: { suspended: { $ne: true } },
+      });
       res.status(201).json(offer);
     } catch (err) {
       await Promise.allSettled(saved.map((image) => images.remove(image)));
@@ -49,15 +55,13 @@ router.get(
   "/offers",
   asyncRoute(async (req, res) => {
     const { filter, sort, page, limit } = listQuery(req.query);
-    const [offers, count] = await Promise.all([
-      Offer.find(filter)
-        .populate("owner", "account.username account.avatar")
-        .sort(sort)
-        .skip((page - 1) * limit)
-        .limit(limit),
-      Offer.countDocuments(filter),
-    ]);
-    res.json({ count, page, limit, offers });
+    const data = await require("../services/publicListings").page(
+      filter,
+      sort,
+      page,
+      limit,
+    );
+    res.json(data);
   }),
 );
 router.get(
@@ -69,8 +73,12 @@ router.get(
       _id: req.params.id,
       status: { $ne: "removed" },
       moderationHidden: { $ne: true },
-    }).populate("owner", "account.username account.avatar");
-    if (!offer) throw fail(404, "Listing not found");
+    }).populate({
+      path: "owner",
+      select: "account.username account.avatar",
+      match: { suspended: { $ne: true } },
+    });
+    if (!offer || !offer.owner) throw fail(404, "Listing not found");
     res.json(offer);
   }),
 );
@@ -121,7 +129,10 @@ router.patch(
       !["active", "reserved"].includes(listing.status)
     )
       throw fail(409, "This listing is sold or hidden and cannot be edited");
-    const fields = validateListing(req.body);
+    const fields = {
+      ...validateListing(req.body),
+      ...require("../lib/policy").evaluate(req.body),
+    };
     res.json(await management.update(listing, version, fields));
   }),
 );

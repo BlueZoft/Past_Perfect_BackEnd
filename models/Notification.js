@@ -4,7 +4,7 @@ const schema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     type: {
       type: String,
-      enum: ["message", "moderation", "report", "verification"],
+      enum: ["message", "moderation", "report", "verification", "account"],
       required: true,
     },
     link: { type: String, required: true },

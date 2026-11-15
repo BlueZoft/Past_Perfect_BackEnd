@@ -39,6 +39,9 @@ const schema = new mongoose.Schema(
       enum: ["active", "reserved", "sold", "removed"],
       default: "active",
     },
+    policyReview: { type: Boolean, default: false },
+    policyVersion: String,
+    policyRuleIds: [String],
     moderationHidden: { type: Boolean, default: false },
     moderationAudit: {
       type: [

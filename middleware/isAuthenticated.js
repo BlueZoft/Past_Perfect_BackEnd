@@ -16,5 +16,21 @@ module.exports = asyncRoute(async (req, res, next) => {
     throw fail(401, "Session expired");
   req.user = session.user;
   req.session = session;
+  const allowed =
+    (req.method === "GET" &&
+      ["/user/me", "/user/appeals", "/user/notifications"].includes(
+        req.path,
+      )) ||
+    (req.method === "POST" &&
+      [
+        "/user/logout",
+        "/user/appeals",
+        "/user/notifications/read-all",
+        "/user/verification/request",
+      ].includes(req.path)) ||
+    (req.method === "PATCH" &&
+      /^\/user\/notifications\/[a-f0-9]{24}\/read$/.test(req.path));
+  if (req.user.suspended && !allowed)
+    throw fail(403, "Account suspended. Open account status to appeal.");
   next();
 });

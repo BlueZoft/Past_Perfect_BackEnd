@@ -1,0 +1,8 @@
+{
+  "version": "placeholder-v1",
+  "notice": {"en": "Example marketplace rules only. Replace these placeholders with your reviewed policy before launch.", "si": "මෙය ආදර්ශ නීති පමණි. දියත් කිරීමට පෙර සමාලෝචිත ප්‍රතිපත්තිය යොදන්න.", "ta": "இவை மாதிரி விதிகள் மட்டுமே. வெளியீட்டிற்கு முன் மதிப்பாய்வு செய்த கொள்கையை அமைக்கவும்."},
+  "rules": [
+    {"id": "sample-reject", "terms": ["example-prohibited-item"], "action": "reject", "label": {"en": "Example prohibited item", "si": "ආදර්ශ තහනම් භාණ්ඩය", "ta": "மாதிரி தடைசெய்யப்பட்ட பொருள்"}},
+    {"id": "sample-review", "terms": ["example-review-item"], "action": "review", "label": {"en": "Example item requiring review", "si": "සමාලෝචනය අවශ්‍ය ආදර්ශ භාණ්ඩය", "ta": "மதிப்பாய்வு தேவைப்படும் மாதிரிப் பொருள்"}}
+  ]
+}

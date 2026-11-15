@@ -24,7 +24,10 @@ router.get(
   "/seller/:id",
   asyncRoute(async (req, res) => {
     validateId(req.params.id);
-    const seller = await User.findById(req.params.id)
+    const seller = await User.findOne({
+      _id: req.params.id,
+      suspended: { $ne: true },
+    })
       .select(publicSeller)
       .lean();
     if (!seller) throw fail(404, "Seller not found");
@@ -32,14 +35,13 @@ router.get(
     delete seller.emailVerifiedAt;
     const { filter, sort, page, limit } = listQuery(req.query);
     filter.owner = seller._id;
-    const [offers, count] = await Promise.all([
-      Offer.find(filter)
-        .sort(sort)
-        .skip((page - 1) * limit)
-        .limit(limit),
-      Offer.countDocuments(filter),
-    ]);
-    res.json({ seller, offers, count, page, limit });
+    const data = await require("../services/publicListings").page(
+      filter,
+      sort,
+      page,
+      limit,
+    );
+    res.json({ seller, ...data });
   }),
 );
 router.patch(
@@ -82,6 +84,24 @@ router.get(
         },
       },
       { $unwind: "$offer" },
+      {
+        $lookup: {
+          from: User.collection.name,
+          let: { owner: "$offer.owner" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$owner"] },
+                suspended: { $ne: true },
+              },
+            },
+            { $project: { _id: 1 } },
+          ],
+          as: "visibleSeller",
+        },
+      },
+      { $match: { "visibleSeller.0": { $exists: true } } },
+      { $unset: "visibleSeller" },
       { $project: { "offer.moderationAudit": 0 } },
       {
         $match: {
@@ -127,7 +147,11 @@ router.put(
       status: { $ne: "removed" },
       moderationHidden: { $ne: true },
     });
-    if (!listing) throw fail(404, "Listing not found");
+    if (
+      !listing ||
+      !(await User.exists({ _id: listing.owner, suspended: { $ne: true } }))
+    )
+      throw fail(404, "Listing not found");
     try {
       await Favourite.updateOne(
         { user: req.user._id, listing: listing._id },
@@ -169,6 +193,10 @@ async function participant(id, user) {
   return enquiry;
 }
 async function send(enquiry, user, value) {
+  const recipient =
+    String(user) === String(enquiry.buyer) ? enquiry.seller : enquiry.buyer;
+  if (!(await User.exists({ _id: recipient, suspended: { $ne: true } })))
+    throw fail(403, "Messaging is unavailable for this account");
   const message = await Message.create({
     enquiry: enquiry._id,
     sender: user,
@@ -178,8 +206,7 @@ async function send(enquiry, user, value) {
     { _id: enquiry._id },
     { $max: { lastMessageAt: message.createdAt } },
   );
-  const recipient =
-    String(user) === String(enquiry.buyer) ? enquiry.seller : enquiry.buyer;
+
   await require("../services/notifications").notify(
     recipient,
     "message",
@@ -203,7 +230,10 @@ router.post(
     if (!listing) throw fail(404, "Active listing not found");
     if (String(listing.owner) === String(req.user._id))
       throw fail(400, "You cannot enquire about your own listing");
-    const owner = await User.exists({ _id: listing.owner });
+    const owner = await User.exists({
+      _id: listing.owner,
+      suspended: { $ne: true },
+    });
     if (!owner) throw fail(404, "Seller unavailable");
     await require("../services/blocks").assertMessaging(
       req.user._id,

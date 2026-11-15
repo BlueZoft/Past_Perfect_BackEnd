@@ -1,4 +1,4 @@
-# v2.4 action plan
+# v2.5 action plan
 
 ## Completed in this release
 
@@ -12,12 +12,13 @@
 8. Add configurable categories and district/town discovery, public seller profiles and username/bio editing, private favourites, buyer enquiry inboxes and participant-only replies.
 9. Add owner-only whole-set photo replacement, versioned avatars, retryable retired-media cleanup and dry-run retention tooling, report/block controls and an allowlisted admin moderation queue.
 10. Complete email verification and single-use password recovery with session invalidation, English/Sinhala/Tamil application and email translations, and private in-app notifications with unread/read controls.
+11. Add suspension/restoration and restricted account sessions, atomic owner-scoped appeals, suspension-aware public discovery, and configurable prohibited-item rejection/review workflows.
 
 ## Next: marketplace MVP
 
 - Production scheduling/monitoring of media maintenance, orphan reconciliation after process crashes, and image re-encoding/scanning.
 - Additional category-specific attributes beyond clothing size, production geography configuration, and optional realtime messaging/Web Push delivery.
-- Production SMTP credentials, account suspension/appeals, prohibited-item policy configuration and advanced moderation tools.
+- Production SMTP credentials, reviewed real marketplace policy, audit archival, administrator MFA and further moderation tooling.
 - Accessibility audit, mobile upload improvements and ongoing translation review as features grow.
 
 ## Later: managed transactions

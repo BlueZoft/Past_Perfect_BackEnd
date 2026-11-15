@@ -243,7 +243,7 @@ router.patch(
     const listing = await Offer.findOneAndUpdate(
       { _id: req.params.id, __v: expected, status: { $ne: "removed" } },
       {
-        $set: { moderationHidden: req.body.hidden },
+        $set: { moderationHidden: req.body.hidden, policyReview: false },
         $inc: { __v: 1 },
         $push: {
           moderationAudit: {
