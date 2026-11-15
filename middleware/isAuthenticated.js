@@ -1,21 +1,15 @@
-
-const User = require("../models/User")
-
-const isAuthenticated = async (req, res, next) => {
-
-    
-    if (req.headers.authorization) {
-        const token = req.headers.authorization.replace("Bearer ", "")
-        const user = await User.findOne({ token: token })
-        if (user) {
-            req.user = user
-            next()
-        } else {
-            return res.status(401).json({ error: "Unauthorized 2" })
-        }
-    } else {
-        return res.status(401).json({ error: "Unauthorized 1" })
-    }
-}
-
-module.exports = isAuthenticated
+const Session = require("../models/Session");
+const { digest, readToken } = require("../services/session");
+const { asyncRoute, fail } = require("../lib/http");
+module.exports = asyncRoute(async (req, res, next) => {
+  const token = readToken(req);
+  if (!/^[a-f0-9]{64}$/.test(token)) throw fail(401, "Authentication required");
+  const session = await Session.findOne({
+    digest: digest(token),
+    expiresAt: { $gt: new Date() },
+  }).populate("user");
+  if (!session || !session.user) throw fail(401, "Session expired");
+  req.user = session.user;
+  req.session = session;
+  next();
+});

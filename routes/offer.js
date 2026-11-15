@@ -1,135 +1,76 @@
-const express = require("express")
-const router = express.Router()
-const cloudinary = require("cloudinary").v2
-const Offer = require("../models/Offer")
-const isAuthenticated = require("../middleware/isAuthenticated")
-
-router.post("/offer/publish", isAuthenticated, async (req, res) => {
+const router = require("express").Router();
+const multer = require("multer");
+const Offer = require("../models/Offer");
+const auth = require("../middleware/isAuthenticated");
+const images = require("../services/images");
+const { asyncRoute, fail } = require("../lib/http");
+const { validateListing, listQuery } = require("../lib/listings");
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 3, fields: 6, fieldSize: 16000 },
+}).fields([
+  { name: "picture1", maxCount: 1 },
+  { name: "picture2", maxCount: 1 },
+  { name: "picture3", maxCount: 1 },
+]);
+router.post(
+  "/offer/publish",
+  auth,
+  (req, res, next) =>
+    upload(req, res, (err) => {
+      if (err)
+        return next(fail(400, "Upload rejected: at most 3 images, 5 MB each"));
+      next();
+    }),
+  asyncRoute(async (req, res) => {
+    const listing = validateListing(req.body);
+    const files = ["picture1", "picture2", "picture3"].flatMap(
+      (key) => req.files?.[key] || [],
+    );
+    if (!files.length) throw fail(400, "At least one image is required");
+    for (const file of files) await images.validate(file);
+    const saved = [];
     try {
-        const { title, description, price, size, condition } = req.fields;
-
-        if (title && price && req.files["picture1"].path) {
-            const newOffer = new Offer({
-                product_name: title,
-                product_description: description,
-                product_price: price,
-                product_details: [
-                    { SIZE: size },
-                    { CONDITION: condition },
-                ],
-                owner: req.user,
-            });
-
-            // Upload images to Cloudinary
-            const imageUrls = [];
-            for (let i = 1; i <= 3; i++) {
-                const pictureField = `picture${i}`;
-                if (req.files[pictureField]) {
-                    const result = await cloudinary.uploader.upload(req.files[pictureField].path, {
-                        folder: "/vinted/offers",
-                    });
-                    imageUrls.push({ url: result.secure_url });
-                }
-            }
-            newOffer.product_images = imageUrls;
-
-            // Save the new offer
-            await newOffer.save();
-
-            res.json(newOffer);
-        } else {
-            res.status(400).json({
-                message: "title, price and at least one picture are required",
-            });
-        }
-    } catch (error) {
-        console.log(error.message);
-        res.status(400).json({ message: error.message });
+      for (const file of files) saved.push(await images.save(file));
+      const offer = await Offer.create({
+        ...listing,
+        images: saved,
+        owner: req.user._id,
+      });
+      await offer.populate("owner", "account.username account.avatar");
+      res.status(201).json(offer);
+    } catch (err) {
+      await Promise.allSettled(saved.map((image) => images.remove(image)));
+      throw err;
     }
-})
-
-router.get("/offers", async (req, res) => {
-    try {
-        const filtersObject = {};
-
-        // Title Management
-        if (req.query.title) {
-            filtersObject.product_name = new RegExp(req.query.title, "i");
-        }
-
-        if (req.query.priceMin) {
-            filtersObject.product_price = {
-                $gte: req.query.priceMin,
-            };
-        }
-
-        if (req.query.priceMax) {
-            if (filtersObject.product_price) {
-                filtersObject.product_price.$lte = req.query.priceMax;
-            } else {
-                filtersObject.product_price = {
-                    $lte: req.query.priceMax,
-                };
-            }
-        }
-
-        console.log(filtersObject);
-
-        // Sort management with sortObject
-        const sortObject = {};
-        if (req.query.sort === "price-desc") {
-            sortObject.product_price = "desc";
-        } else if (req.query.sort === "price-asc") {
-            sortObject.product_price = "asc";
-        }
-
-        let limit = 0;
-        if (req.query.limit) {
-            limit = Number(req.query.limit);
-        }
-
-        let page = 1;
-        if (req.query.page) {
-            page = Number(req.query.page);
-        }
-
-        const offers = await Offer.find(filtersObject)
-            .populate({
-                path: "owner",
-                select: "account",
-            })
-            .sort(sortObject)
-            .skip((page - 1) * limit)
-            .limit(limit);
-
-        // this line will return the number of listings found based on the filters
-        const count = await Offer.countDocuments(filtersObject);
-
-        res.json({
-            count: count,
-            offers: offers,
-        });
-    } catch (error) {
-        console.log(error.message);
-        res.status(400).json({ message: error.message });
-    }
-});
-
-router.get("/offer/:id", async (req, res) => {
-    try {
-        const offer = await Offer.findById(req.params.id).populate({
-            path: "owner",
-            select: "account.username account.phone account.avatar",
-        });
-        if (offer) {
-            res.json(offer);
-        } else {
-            res.status(404).json({ message: "Offer not found" });
-        }
-    } catch (error) {
-        console.log(error.message);
-        res.status(400).json({ message: error.message });
-    }
-});
-
-module.exports = router
+  }),
+);
+router.get(
+  "/offers",
+  asyncRoute(async (req, res) => {
+    const { filter, sort, page, limit } = listQuery(req.query);
+    const [offers, count] = await Promise.all([
+      Offer.find(filter)
+        .populate("owner", "account.username account.avatar")
+        .sort(sort)
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Offer.countDocuments(filter),
+    ]);
+    res.json({ count, page, limit, offers });
+  }),
+);
+router.get(
+  "/offer/:id",
+  asyncRoute(async (req, res) => {
+    if (!/^[a-fA-F0-9]{24}$/.test(req.params.id))
+      throw fail(400, "Invalid listing ID");
+    const offer = await Offer.findOne({
+      _id: req.params.id,
+      status: { $ne: "removed" },
+    }).populate("owner", "account.username account.avatar");
+    if (!offer) throw fail(404, "Listing not found");
+    res.json(offer);
+  }),
+);
+module.exports = router;
