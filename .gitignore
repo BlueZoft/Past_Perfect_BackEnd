@@ -4,3 +4,5 @@ node_modules
 uploads/
 .env.*
 !.env.example
+
+.mail-outbox/

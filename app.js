@@ -14,6 +14,15 @@ app.use((req, res, next) => {
     return res.status(403).json({ error: "Invalid request origin" });
   next();
 });
+app.use((req, res, next) => {
+  if (
+    req.path.startsWith("/user/") ||
+    req.path.startsWith("/enquiry/") ||
+    req.path.startsWith("/admin/")
+  )
+    res.setHeader("Cache-Control", "no-store");
+  next();
+});
 app.use(express.json({ limit: "32kb" }));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -35,6 +44,8 @@ app.use(
   }),
 );
 app.use(require("./routes/user"));
+app.use(require("./routes/accounts"));
+app.use(require("./routes/notifications"));
 app.use(require("./routes/offer"));
 app.use(require("./routes/payment"));
 app.use(require("./routes/community"));

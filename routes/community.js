@@ -10,7 +10,8 @@ const { asyncRoute, fail } = require("../lib/http");
 const { catalogue } = require("../lib/catalogue");
 const { listQuery } = require("../lib/listings");
 const { validateId, assertFields } = require("../services/listings");
-const publicSeller = "account.username account.avatar account.bio createdAt";
+const publicSeller =
+  "account.username account.avatar account.bio createdAt emailVerifiedAt";
 const messagesLimit = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 60,
@@ -27,6 +28,8 @@ router.get(
       .select(publicSeller)
       .lean();
     if (!seller) throw fail(404, "Seller not found");
+    seller.emailVerified = !!seller.emailVerifiedAt;
+    delete seller.emailVerifiedAt;
     const { filter, sort, page, limit } = listQuery(req.query);
     filter.owner = seller._id;
     const [offers, count] = await Promise.all([
@@ -174,6 +177,14 @@ async function send(enquiry, user, value) {
   await Enquiry.updateOne(
     { _id: enquiry._id },
     { $max: { lastMessageAt: message.createdAt } },
+  );
+  const recipient =
+    String(user) === String(enquiry.buyer) ? enquiry.seller : enquiry.buyer;
+  await require("../services/notifications").notify(
+    recipient,
+    "message",
+    "/enquiries/" + enquiry._id,
+    "message:" + message._id,
   );
   return message;
 }

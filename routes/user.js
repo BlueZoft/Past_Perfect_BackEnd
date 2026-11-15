@@ -36,6 +36,17 @@ router.post(
       account: { username },
       hash: await bcrypt.hash(req.body.password, 12),
     });
+    if (require("../services/mail").enabled()) {
+      try {
+        await require("../services/accountTokens").request(
+          user,
+          "verify",
+          req.body.locale,
+        );
+      } catch {
+        console.error("Signup verification email delivery failed");
+      }
+    }
     await issue(user, res);
     res.status(201).json(publicUser(user));
   }),

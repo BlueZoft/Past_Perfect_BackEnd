@@ -15,6 +15,7 @@ exports.issue = async (user, res) => {
   const token = crypto.randomBytes(32).toString("hex");
   await Session.create({
     digest: digest(token),
+    authVersion: user.authVersion || 0,
     user: user._id,
     expiresAt: new Date(Date.now() + config.sessionMs),
   });

@@ -532,6 +532,42 @@ test("media ownership, cleanup, blocking, reporting and admin moderation", async
       },
     );
     await t.test(
+      "report and moderation notifications link to recipient-scoped pages",
+      async () => {
+        const buyerNotices = await (
+          await request("GET", "/user/notifications", undefined, buyer.cookie)
+        ).json();
+        assert.ok(
+          buyerNotices.notifications.some(
+            (item) => item.type === "report" && item.link === "/reports",
+          ),
+        );
+        const sellerNotices = await (
+          await request("GET", "/user/notifications", undefined, seller.cookie)
+        ).json();
+        assert.ok(
+          sellerNotices.notifications.some(
+            (item) =>
+              item.type === "moderation" && item.link === "/my-listings",
+          ),
+        );
+        const ownReports = await (
+          await request("GET", "/user/reports", undefined, buyer.cookie)
+        ).json();
+        assert.equal(ownReports.count, 2);
+        assert.equal(ownReports.reports[0].snapshot, undefined);
+        assert.equal(ownReports.reports[0].resolution, undefined);
+        assert.equal(
+          (
+            await (
+              await request("GET", "/user/reports", undefined, seller.cookie)
+            ).json()
+          ).count,
+          0,
+        );
+      },
+    );
+    await t.test(
       "retention maintenance defaults to dry-run and applies only expired removed media",
       async () => {
         await Offer.updateOne(

@@ -8,7 +8,12 @@ module.exports = asyncRoute(async (req, res, next) => {
     digest: digest(token),
     expiresAt: { $gt: new Date() },
   }).populate("user");
-  if (!session || !session.user) throw fail(401, "Session expired");
+  if (
+    !session ||
+    !session.user ||
+    (session.authVersion || 0) !== (session.user.authVersion || 0)
+  )
+    throw fail(401, "Session expired");
   req.user = session.user;
   req.session = session;
   next();

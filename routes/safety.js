@@ -203,6 +203,12 @@ router.patch(
       { new: true, runValidators: true },
     );
     if (!report) throw fail(409, "Report changed or already reviewed");
+    await require("../services/notifications").notify(
+      report.reporter,
+      "report",
+      "/reports",
+      "report:" + report._id + ":" + report.__v,
+    );
     res.json(report);
   }),
 );
@@ -256,7 +262,30 @@ router.patch(
       { new: true, runValidators: true },
     ).select("+moderationAudit");
     if (!listing) throw fail(409, "Listing changed or was removed");
+    await require("../services/notifications").notify(
+      listing.owner,
+      "moderation",
+      "/my-listings",
+      "moderation:" + listing._id + ":" + listing.__v,
+    );
     res.json(listing);
+  }),
+);
+router.get(
+  "/user/reports",
+  auth,
+  asyncRoute(async (req, res) => {
+    const { page, limit } = listQuery(req.query);
+    const filter = { reporter: req.user._id };
+    const [reports, count] = await Promise.all([
+      Report.find(filter)
+        .select("targetType reason status reviewedAt createdAt")
+        .sort({ createdAt: -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Report.countDocuments(filter),
+    ]);
+    res.json({ reports, count, page, limit });
   }),
 );
 module.exports = router;
