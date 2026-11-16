@@ -1,4 +1,4 @@
-# PastPerfect API — v2.8
+# PastPerfect API — v2.9
 
 Express/MongoDB API for a Sri Lankan used-item marketplace. Version 2 repairs authentication, provides a consistent listing contract, validates browsing/uploads, and disables the unsafe prototype payment endpoint.
 
@@ -70,3 +70,5 @@ Version 2.6 adds decoded/resized WebP uploads, conservative dry-run local orphan
 Version 2.7 adds server-priced orders, atomic buyer-specific reservations, cancellation/expiry, order history, participant enquiries and collection status handling. **No real charging is enabled.** Defaults keep checkout disabled; local `PAYMENT_DRIVER=test` enables an explicitly labelled simulator that is refused in production. See the backend [order guide](docs/ORDERS.md) for configuration and limitations.
 
 Version 2.8 adds buyer order disputes, one seller response, seller-approved full simulated refunds, and an allowlisted administrator review queue. Decisions are versioned, retain a shared resolution, notify both participants and preserve private order history. Suspended participants retain these dispute controls. See [release notes](docs/V2.md) and the backend order guide for placeholder policy and live-payment limitations.
+
+Version 2.9 adds indexed title/description keyword search, relevance sorting, condition/size filters, and private named saved searches with rename/delete controls. Legacy literal title search URLs still work. Saved searches reopen current public results; they do not send alerts. See [release notes](docs/V2.md) and the [search guide](docs/SEARCH.md) for index setup and limitations.

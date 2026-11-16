@@ -49,6 +49,7 @@ app.use(require("./routes/notifications"));
 app.use(require("./routes/offer"));
 app.use(require("./routes/payment"));
 app.use(require("./routes/community"));
+app.use(require("./routes/savedSearches"));
 app.use(require("./routes/media"));
 app.use(require("./routes/safety"));
 app.use(require("./routes/orders"));

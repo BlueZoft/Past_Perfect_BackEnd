@@ -1,4 +1,4 @@
-# v2.8 action plan
+# v2.9 action plan
 
 ## Completed in this release
 
@@ -16,11 +16,12 @@
 12. Add decoded/resized metadata-free image output, local orphan reconciliation, configurable typed category fields, skip navigation, route focus, mobile layouts and automated DOM accessibility checks.
 13. Add server-priced order snapshots, atomic buyer reservations, idempotent creation, cancellation/expiry, participant-only order history/contact, collection fulfilment and an explicitly non-production payment simulator.
 14. Add private buyer disputes, seller responses, atomic full test refunds, admin review, English/Sinhala/Tamil screens, and participant notifications.
+15. Add language-neutral indexed keyword search with relevance ordering and condition/size filters, plus private named saved searches with atomic limits and versioned rename/removal.
 
 ## Next: marketplace MVP
 
 - Production scheduling/monitoring, remote-provider orphan reconciliation, malware scanning and deployment resource controls.
-- Reviewed production geography/catalogue configuration, indexed advanced search and optional realtime messaging/Web Push delivery.
+- Reviewed production geography/catalogue configuration, typed-attribute/fuzzy search extensions, matching-listing alerts and optional realtime messaging/Web Push delivery.
 - Production SMTP credentials, reviewed real marketplace policy, audit archival, administrator MFA and further moderation tooling.
 - Manual assistive-technology, contrast and device testing; ongoing accessibility and translation review as features grow.
 
@@ -28,6 +29,6 @@
 
 - Validate actual provider/business requirements; replace documented placeholders securely.
 - Real payment provider integration, signature-verified/idempotent webhooks, seller settlement, shipping and real refunds/chargebacks. Collection order/reservation foundations are implemented in v2.7; dispute review and simulated full refunds in v2.8.
-- Transaction-linked reviews, order/delivery notifications, saved searches and seller analytics.
+- Transaction-linked reviews, delivery notifications and seller analytics.
 
 This release does not claim these future capabilities. No present-day market research or existing-data migration is required for this implementation. Keep each README and API/configuration documentation synchronized with future changes.

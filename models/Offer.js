@@ -143,6 +143,14 @@ const schema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+schema.index(
+  { title: "text", description: "text" },
+  {
+    name: "listing_keywords",
+    default_language: "none",
+    weights: { title: 4, description: 1 },
+  },
+);
 schema.index({ category: 1, district: 1, town: 1, status: 1, createdAt: -1 });
 schema.index({ status: 1, createdAt: -1, _id: -1 });
 schema.index({ owner: 1, status: 1, createdAt: -1, _id: -1 });

@@ -185,3 +185,16 @@ All POST fields are allowlisted. `version` is the current order revision; text f
 New order states: `disputed`, `refunded`. Order `dispute` contains status open/refunded/declined, previousStatus, reason/openedBy/openedAt, optional response/respondedAt, resolution/resolvedBy/resolvedAt, and refundMinor/refundReference only after simulated refund. Original amounts are unchanged. Admin queues omit requestKey; public listing responses continue to exclude the entire embedded ledger. Participant history/detail includes shared case information.
 
 Disputed orders cannot progress collection. Decline restores previous state; full simulated refund releases a matching uncollected reservation lock but keeps the listing sold. Completed/removed inventory is preserved. Repeated final decisions conflict. Suspended users can access their own dispute endpoints as well as read/cancel; they still cannot send enquiries or resume commerce. Responses and admin decline do not require simulation to remain enabled. See [order guide](ORDERS.md) for the explicit placeholder policy, return limitations and future real-provider requirements.
+
+## v2.9 keyword search and private saved searches
+
+`GET /offers` and public seller listing queries accept `q` (1–120 nonempty normalized characters for keyword search), `condition` and `size`, in addition to existing filters. Whitespace/empty `q` behaves as no keyword filter; a nonempty title and q together return 400. `sort=relevance` requires q and is its default when sort is omitted. Other sort values keep their existing meanings. Standard MongoDB text phrase/negation syntax applies. `title` retains escaped literal substring semantics. Text scores are not returned. Conditions use schema enum values; size is XS/S/M/L/XL/XXL and cannot be paired with an explicit non-clothing category. Invalid inputs return 400.
+
+| Method | Path | Contract |
+| --- | --- | --- |
+| GET | `/user/saved-searches` | Active session; `{searches,count,limit:25}` (bounded collection, no pagination) |
+| POST | `/user/saved-searches` | `{name,query}`; 201 saved record; query string values from the search allowlist only |
+| PATCH | `/user/saved-searches/:id` | `{name,version}`; rename only; returns updated record |
+| DELETE | `/user/saved-searches/:id` | `{version}`; removes owner's record; 204 |
+
+Records contain `_id,name,query,revision,createdAt,updatedAt`. Internal fingerprints and other accounts' searches are not exposed. Unknown body/query fields are rejected on save. Names trim to 1–80 characters. Stored filters exclude page/limit; canonical defaults and numeric price representations deduplicate equivalent queries. Duplicate filters or limit/stale conflicts return 409; foreign/missing IDs return 404. Reads/mutations use no-store, cookie session authentication and existing exact-origin mutation checks. Suspended accounts receive 403. Reopening a saved search uses the regular public query endpoint and current visibility; it does not reserve inventory or send alerts. See [search guide](SEARCH.md) for text syntax, index provisioning and limits.

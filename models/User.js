@@ -46,6 +46,20 @@ module.exports = mongoose.model(
         ],
         select: false,
       },
+      savedSearches: {
+        type: [
+          new mongoose.Schema({
+            name: { type: String, required: true, maxlength: 80 },
+            query: { type: Map, of: String, required: true },
+            fingerprint: { type: String, required: true },
+            revision: { type: Number, default: 0 },
+            createdAt: Date,
+            updatedAt: Date,
+          }),
+        ],
+        select: false,
+        default: () => [],
+      },
       emailVerifiedAt: Date,
       authVersion: { type: Number, default: 0 },
       verificationToken: {

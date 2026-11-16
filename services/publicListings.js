@@ -1,8 +1,11 @@
 const Offer = require("../models/Offer");
 const User = require("../models/User");
 exports.page = async (filter, sort, page, limit) => {
+  if (filter.$text) await Offer.init();
+  const relevance = !!sort.searchScore;
   const [result] = await Offer.aggregate([
     { $match: filter },
+    ...(relevance ? [{ $set: { searchScore: { $meta: "textScore" } } }] : []),
     {
       $lookup: {
         from: User.collection.name,
@@ -22,7 +25,8 @@ exports.page = async (filter, sort, page, limit) => {
     { $unwind: "$seller" },
     { $set: { owner: "$seller" } },
     { $unset: ["seller", "moderationAudit", "orders", "reservation"] },
-    { $sort: sort },
+    { $sort: relevance ? { searchScore: -1, _id: 1 } : sort },
+    { $unset: "searchScore" },
     {
       $facet: {
         offers: [{ $skip: (page - 1) * limit }, { $limit: limit }],

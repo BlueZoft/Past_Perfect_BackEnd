@@ -97,6 +97,7 @@ router.get(
         throw fail(400, "Invalid listing status");
       filter.status = req.query.status;
     }
+    if (filter.$text) await Offer.init();
     const [offers, count] = await Promise.all([
       Offer.find(filter)
         .sort(sort)
