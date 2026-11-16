@@ -102,7 +102,13 @@ router.get(
       },
       { $match: { "visibleSeller.0": { $exists: true } } },
       { $unset: "visibleSeller" },
-      { $project: { "offer.moderationAudit": 0 } },
+      {
+        $project: {
+          "offer.moderationAudit": 0,
+          "offer.orders": 0,
+          "offer.reservation": 0,
+        },
+      },
       {
         $match: {
           "offer.status": { $ne: "removed" },
@@ -192,29 +198,7 @@ async function participant(id, user) {
   if (!enquiry) throw fail(404, "Enquiry not found");
   return enquiry;
 }
-async function send(enquiry, user, value) {
-  const recipient =
-    String(user) === String(enquiry.buyer) ? enquiry.seller : enquiry.buyer;
-  if (!(await User.exists({ _id: recipient, suspended: { $ne: true } })))
-    throw fail(403, "Messaging is unavailable for this account");
-  const message = await Message.create({
-    enquiry: enquiry._id,
-    sender: user,
-    text: value,
-  });
-  await Enquiry.updateOne(
-    { _id: enquiry._id },
-    { $max: { lastMessageAt: message.createdAt } },
-  );
-
-  await require("../services/notifications").notify(
-    recipient,
-    "message",
-    "/enquiries/" + enquiry._id,
-    "message:" + message._id,
-  );
-  return message;
-}
+const { send } = require("../services/enquiryMessages");
 router.post(
   "/offer/:id/enquiries",
   auth,

@@ -1,4 +1,37 @@
 const mongoose = require("mongoose");
+const orderSchema = new mongoose.Schema({
+  buyer: { type: mongoose.Schema.Types.ObjectId, required: true },
+  seller: { type: mongoose.Schema.Types.ObjectId, required: true },
+  listingId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  title: String,
+  itemMinor: Number,
+  platformFeeMinor: Number,
+  deliveryMinor: Number,
+  totalMinor: Number,
+  currency: { type: String, enum: ["LKR"] },
+  requestKey: String,
+  requestedListingVersion: Number,
+  status: {
+    type: String,
+    enum: [
+      "awaiting_payment",
+      "confirmed",
+      "payment_failed",
+      "cancelled",
+      "expired",
+      "ready",
+      "completed",
+    ],
+    required: true,
+  },
+  revision: { type: Number, default: 0 },
+  expiresAt: Date,
+  createdAt: Date,
+  updatedAt: Date,
+  fulfilment: { type: String, enum: ["collection"] },
+  paymentMode: String,
+  paymentReference: String,
+});
 const schema = new mongoose.Schema(
   {
     title: { type: String, required: true, minlength: 3, maxlength: 120 },
@@ -47,6 +80,15 @@ const schema = new mongoose.Schema(
       enum: ["active", "reserved", "sold", "removed"],
       default: "active",
     },
+    orders: { type: [orderSchema], select: false, default: () => [] },
+    reservation: {
+      type: new mongoose.Schema(
+        { orderId: mongoose.Schema.Types.ObjectId, expiresAt: Date },
+        { _id: false },
+      ),
+      select: false,
+    },
+    orderLock: { type: Boolean, default: false },
     policyReview: { type: Boolean, default: false },
     policyVersion: String,
     policyRuleIds: [String],
@@ -74,4 +116,12 @@ const schema = new mongoose.Schema(
 schema.index({ category: 1, district: 1, town: 1, status: 1, createdAt: -1 });
 schema.index({ status: 1, createdAt: -1, _id: -1 });
 schema.index({ owner: 1, status: 1, createdAt: -1, _id: -1 });
+schema.index(
+  { "orders.buyer": 1, "orders.requestKey": 1 },
+  {
+    unique: true,
+    partialFilterExpression: { "orders.requestKey": { $exists: true } },
+  },
+);
+schema.index({ orderLock: 1, "reservation.expiresAt": 1 });
 module.exports = mongoose.model("Offer", schema);

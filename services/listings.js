@@ -35,6 +35,7 @@ exports.update = async (listing, version, fields) => {
       _id: listing._id,
       owner: listing.owner,
       __v: version,
+      orderLock: { $ne: true },
       status: { $ne: "removed" },
       ...(fields.status === "removed"
         ? {}

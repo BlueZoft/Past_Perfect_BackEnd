@@ -145,3 +145,26 @@ Publishing/editing attaches policy version/rule IDs and flags review matches hid
 Listing create/edit accepts `attributes`: an object for JSON requests or a JSON-encoded object for multipart publishing. GET `/catalogue` provides allowed field definitions by category. Unknown/cross-category fields, invalid types/ranges and nested values return 400. Optional empty inputs are omitted; numeric values are persisted as numbers. Listing responses include a plain attributes object. No existing records are automatically rewritten.
 
 Image inputs remain JPEG/PNG/WebP and at most 5 MB, but must now fully decode and fit the image dimension/page limits. Output is metadata-free, auto-rotated WebP. Image objects include `width`, `height`, `bytes` and `driver`; callers must use the returned URL rather than infer an input extension. Avatars use 512px bounds, listings 1920px, without enlargement. Malformed/animated/oversized content returns 400 and saturated processing returns 429. Image bodies are processed server-side; client headers and metadata do not override these limits.
+
+
+## Collection orders and test checkout (v2.7)
+
+| Method | Route | Contract |
+| --- | --- | --- |
+| GET | `/orders/config` | Public paymentMode (disabled/test), currency, holdMinutes, platformFeeMinor and collection fulfilment |
+| GET | `/offer/:id/quote` | Authenticated non-owner quote: listingId/title/version, item/fee/delivery/total minor units and configuration |
+| POST | `/orders` | Verified buyer; `{listingId,listingVersion,expectedTotalMinor,idempotencyKey}` → 201 new / 200 replay |
+| GET | `/user/orders` | Participant-only `{orders,count,page,limit}` with normal pagination bounds |
+| GET | `/orders/:id` | Participant-only order snapshot and current status/revision |
+| POST | `/orders/:id/cancel` | Either participant, `{version}`, only awaiting_payment |
+| POST | `/orders/:id/test-success` | Buyer-only, `{version}`, explicit non-production test mode |
+| POST | `/orders/:id/test-failure` | Buyer-only, `{version}`, releases pending hold without confirmation |
+| POST | `/orders/:id/ready` | Seller-only, `{version}`, confirmed → ready |
+| POST | `/orders/:id/complete` | Buyer-only, `{version}`, ready → completed |
+| POST | `/orders/:id/enquiry` | Participant-only `{message}`; existing blocking/suspension rules, 201 `{_id:enquiryId}` |
+
+`version` on order actions is the order's `revision`, not listing `__v`. Unknown fields, including supplied card/amount data, are rejected. Server pricing uses current listing price and configuration; expectedTotalMinor is only an equality guard. Quotes can change; reload after 409. Request keys have a unique partial compound index across buyer/key pairs. Creation is limited to 5 attempts per buyer per 15 minutes, including failed/retried requests. Disabled/production simulator calls return 503 without charge.
+
+Order states: awaiting_payment, confirmed, ready, completed, cancelled, expired, payment_failed. Immutable money fields are itemMinor/platformFeeMinor/deliveryMinor/totalMinor/currency; fulfilment is collection. Active order locks prevent owner mutations. Cancellation/expiry/failure releases inventory only while the matching pending reservation is active. Confirmed orders retain the lock until completion and are not subject to hold expiry.
+
+Another account receives 404 on order reads/actions/contact. Suspended participants may GET their own orders and POST pending cancellation; other order mutations remain denied. Private order data is select-excluded and explicitly removed from public aggregates. Order-related notifications use type `order`. The legacy `/payment` endpoint remains 503. No externally callable real-provider webhook exists; see ORDERS.md before future live integration.

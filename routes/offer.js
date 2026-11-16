@@ -126,6 +126,7 @@ router.patch(
     const version = management.version(req.body.version);
     const listing = await management.owned(req.params.id, req.user._id);
     if (
+      listing.orderLock ||
       listing.moderationHidden ||
       !["active", "reserved"].includes(listing.status)
     )
@@ -145,6 +146,7 @@ router.patch(
     const version = management.version(req.body.version);
     const listing = await management.owned(req.params.id, req.user._id);
     if (
+      listing.orderLock ||
       listing.moderationHidden ||
       !management.transitions[listing.status]?.includes(req.body.status) ||
       req.body.status === "removed"

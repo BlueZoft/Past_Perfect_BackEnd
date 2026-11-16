@@ -21,6 +21,7 @@ router.put(
       listing = await management.owned(req.params.id, req.user._id);
     if (
       !["active", "reserved"].includes(listing.status) ||
+      listing.orderLock ||
       listing.moderationHidden
     )
       throw fail(409, "This listing cannot be edited");

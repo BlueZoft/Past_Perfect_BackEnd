@@ -1,4 +1,4 @@
-# PastPerfect API — v2.6
+# PastPerfect API — v2.7
 
 Express/MongoDB API for a Sri Lankan used-item marketplace. Version 2 repairs authentication, provides a consistent listing contract, validates browsing/uploads, and disables the unsafe prototype payment endpoint.
 
@@ -47,7 +47,7 @@ Cloudinary placeholders deliberately cannot activate that driver. Supply actual 
 - Login/signup have an in-memory rate limiter. Multi-instance deployments need a shared limiter store and reviewed proxy/IP configuration. Do not blindly enable trust proxy.
 - Local images are limited to 3 files, 5 MB each, with JPEG/PNG/WebP signature and decode checks. Images are re-encoded to metadata-free WebP, listings up to 1920px and avatars up to 512px. Production rejects the local driver. Processing is bounded per process; production still needs ingress/resource monitoring and malware scanning where appropriate.
 - Owner-scoped management enforces status transitions and optimistic concurrency using listing versions. Public seller responses expose username/avatar, not email or session data. Replacement media is compensated on failed updates. Retired media is queued for deletion, with reference checks and retryable failures; see the operations guide for remaining crash/orphan reconciliation limitations.
-- Realtime messaging, Web Push, buyer-specific reservations and orders are not implemented yet.
+- Realtime messaging, Web Push, live payments, shipping, refunds and disputes are not implemented yet.
 
 See [API contract](docs/API.md), [action plan](docs/ACTION_PLAN.md) and [release notes](docs/V2.md). The v2 schema is breaking; existing prototype data is not migrated or deleted automatically.
 
@@ -66,3 +66,5 @@ Version 2.4 completes email verification and password recovery, private in-app n
 Version 2.5 adds restricted suspended-account sessions, versioned suspension/restoration, user appeals with atomic admin decisions, and configurable prohibited-item rejection/review queues. Bundled policy rules are labelled placeholders; replace them before launch. See [release notes](docs/V2.md).
 
 Version 2.6 adds decoded/resized WebP uploads, conservative dry-run local orphan reconciliation, configurable typed category attributes, skip navigation/route focus, larger touch targets and responsive form/listing layouts. See [release notes](docs/V2.md).
+
+Version 2.7 adds server-priced orders, atomic buyer-specific reservations, cancellation/expiry, order history, participant enquiries and collection status handling. **No real charging is enabled.** Defaults keep checkout disabled; local `PAYMENT_DRIVER=test` enables an explicitly labelled simulator that is refused in production. See the backend [order guide](docs/ORDERS.md) for configuration and limitations.

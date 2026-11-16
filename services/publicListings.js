@@ -21,7 +21,7 @@ exports.page = async (filter, sort, page, limit) => {
     },
     { $unwind: "$seller" },
     { $set: { owner: "$seller" } },
-    { $unset: ["seller", "moderationAudit"] },
+    { $unset: ["seller", "moderationAudit", "orders", "reservation"] },
     { $sort: sort },
     {
       $facet: {
