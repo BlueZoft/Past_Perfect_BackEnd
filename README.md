@@ -1,4 +1,4 @@
-# PastPerfect API — v2.7
+# PastPerfect API — v2.8
 
 Express/MongoDB API for a Sri Lankan used-item marketplace. Version 2 repairs authentication, provides a consistent listing contract, validates browsing/uploads, and disables the unsafe prototype payment endpoint.
 
@@ -36,7 +36,7 @@ Tests require MongoDB at `mongodb://127.0.0.1:27017`, or `TEST_MONGODB_URI`. Int
 | `CLOUDINARY_APISECRET` | `REPLACE_WITH_API_SECRET` placeholder |
 | `NODE_ENV` | Set `production` for secure cookies; HTTPS required |
 
-Cloudinary placeholders deliberately cannot activate that driver. Supply actual values securely. No account names, shipping rates, gateway credentials or business policies are assumed. Payments remain unavailable regardless of environment settings until a complete order/provider integration is implemented.
+Cloudinary placeholders deliberately cannot activate that driver. Supply actual values securely. No account names, shipping rates, gateway credentials or business policies are assumed. Live payments remain unavailable. The local test simulator requires `PAYMENT_DRIVER=test` outside production and never moves money.
 
 ## Design and limitations
 
@@ -47,7 +47,7 @@ Cloudinary placeholders deliberately cannot activate that driver. Supply actual 
 - Login/signup have an in-memory rate limiter. Multi-instance deployments need a shared limiter store and reviewed proxy/IP configuration. Do not blindly enable trust proxy.
 - Local images are limited to 3 files, 5 MB each, with JPEG/PNG/WebP signature and decode checks. Images are re-encoded to metadata-free WebP, listings up to 1920px and avatars up to 512px. Production rejects the local driver. Processing is bounded per process; production still needs ingress/resource monitoring and malware scanning where appropriate.
 - Owner-scoped management enforces status transitions and optimistic concurrency using listing versions. Public seller responses expose username/avatar, not email or session data. Replacement media is compensated on failed updates. Retired media is queued for deletion, with reference checks and retryable failures; see the operations guide for remaining crash/orphan reconciliation limitations.
-- Realtime messaging, Web Push, live payments, shipping, refunds and disputes are not implemented yet.
+- Realtime messaging, Web Push, live payments, shipping and real refunds remain planned. Dispute review and full simulated refunds are available for test-paid orders.
 
 See [API contract](docs/API.md), [action plan](docs/ACTION_PLAN.md) and [release notes](docs/V2.md). The v2 schema is breaking; existing prototype data is not migrated or deleted automatically.
 
@@ -68,3 +68,5 @@ Version 2.5 adds restricted suspended-account sessions, versioned suspension/res
 Version 2.6 adds decoded/resized WebP uploads, conservative dry-run local orphan reconciliation, configurable typed category attributes, skip navigation/route focus, larger touch targets and responsive form/listing layouts. See [release notes](docs/V2.md).
 
 Version 2.7 adds server-priced orders, atomic buyer-specific reservations, cancellation/expiry, order history, participant enquiries and collection status handling. **No real charging is enabled.** Defaults keep checkout disabled; local `PAYMENT_DRIVER=test` enables an explicitly labelled simulator that is refused in production. See the backend [order guide](docs/ORDERS.md) for configuration and limitations.
+
+Version 2.8 adds buyer order disputes, one seller response, seller-approved full simulated refunds, and an allowlisted administrator review queue. Decisions are versioned, retain a shared resolution, notify both participants and preserve private order history. Suspended participants retain these dispute controls. See [release notes](docs/V2.md) and the backend order guide for placeholder policy and live-payment limitations.

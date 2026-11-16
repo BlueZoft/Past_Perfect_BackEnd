@@ -18,6 +18,7 @@ exports.read = async (id, user) => {
   if (!order || !own(order, user)) throw fail(404, "Order not found");
   return { listing, order };
 };
+exports.notices = notices;
 async function notices(order, event) {
   await Promise.all([
     notify(

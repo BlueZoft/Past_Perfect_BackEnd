@@ -21,6 +21,8 @@ const orderSchema = new mongoose.Schema({
       "expired",
       "ready",
       "completed",
+      "disputed",
+      "refunded",
     ],
     required: true,
   },
@@ -31,6 +33,34 @@ const orderSchema = new mongoose.Schema({
   fulfilment: { type: String, enum: ["collection"] },
   paymentMode: String,
   paymentReference: String,
+  dispute: {
+    type: new mongoose.Schema(
+      {
+        status: {
+          type: String,
+          enum: ["open", "refunded", "declined"],
+          required: true,
+        },
+        previousStatus: {
+          type: String,
+          enum: ["confirmed", "ready", "completed"],
+          required: true,
+        },
+        reason: { type: String, maxlength: 2000, required: true },
+        openedBy: mongoose.Schema.Types.ObjectId,
+        openedAt: Date,
+        response: { type: String, maxlength: 2000 },
+        respondedAt: Date,
+        resolution: { type: String, maxlength: 2000 },
+        resolvedBy: mongoose.Schema.Types.ObjectId,
+        resolvedAt: Date,
+        refundMinor: Number,
+        refundReference: String,
+      },
+      { _id: false },
+    ),
+    default: undefined,
+  },
 });
 const schema = new mongoose.Schema(
   {
@@ -124,4 +154,5 @@ schema.index(
   },
 );
 schema.index({ orderLock: 1, "reservation.expiresAt": 1 });
+schema.index({ "orders.dispute.status": 1, "orders.dispute.openedAt": -1 });
 module.exports = mongoose.model("Offer", schema);

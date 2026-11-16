@@ -165,6 +165,23 @@ Image inputs remain JPEG/PNG/WebP and at most 5 MB, but must now fully decode an
 
 `version` on order actions is the order's `revision`, not listing `__v`. Unknown fields, including supplied card/amount data, are rejected. Server pricing uses current listing price and configuration; expectedTotalMinor is only an equality guard. Quotes can change; reload after 409. Request keys have a unique partial compound index across buyer/key pairs. Creation is limited to 5 attempts per buyer per 15 minutes, including failed/retried requests. Disabled/production simulator calls return 503 without charge.
 
-Order states: awaiting_payment, confirmed, ready, completed, cancelled, expired, payment_failed. Immutable money fields are itemMinor/platformFeeMinor/deliveryMinor/totalMinor/currency; fulfilment is collection. Active order locks prevent owner mutations. Cancellation/expiry/failure releases inventory only while the matching pending reservation is active. Confirmed orders retain the lock until completion and are not subject to hold expiry.
+Order states: awaiting_payment, confirmed, ready, completed, cancelled, expired, payment_failed, disputed, refunded. Immutable money fields are itemMinor/platformFeeMinor/deliveryMinor/totalMinor/currency; fulfilment is collection. Active order locks prevent owner mutations. Cancellation/expiry/failure releases inventory only while the matching pending reservation is active. Confirmed orders retain the lock until completion or simulated refund and are not subject to hold expiry.
 
-Another account receives 404 on order reads/actions/contact. Suspended participants may GET their own orders and POST pending cancellation; other order mutations remain denied. Private order data is select-excluded and explicitly removed from public aggregates. Order-related notifications use type `order`. The legacy `/payment` endpoint remains 503. No externally callable real-provider webhook exists; see ORDERS.md before future live integration.
+Another account receives 404 on order reads/actions/contact. Suspended participants may GET their own orders, POST pending cancellation and access the dispute remedies below; other order mutations remain denied. Private order data is select-excluded and explicitly removed from public aggregates. Order-related notifications use type `order`. The legacy `/payment` endpoint remains 503. No externally callable real-provider webhook exists; see ORDERS.md before future live integration.
+
+## v2.8 order disputes (development refunds only)
+
+| Method | Path | Contract |
+| --- | --- | --- |
+| POST | `/orders/:id/dispute` | Buyer participant, `{version, reason}`; confirmed/ready/completed test-paid order → disputed |
+| POST | `/orders/:id/dispute-response` | Seller participant, `{version, response}`; one response per open case |
+| POST | `/orders/:id/test-refund` | Seller participant, `{version, resolution}`; open dispute → simulated full refund |
+| GET | `/admin/order-disputes?status=open&page=1&limit=10` | Active allowlisted admin; status open/refunded/declined; paginated `{orders,count,page,limit}` |
+| GET | `/admin/order-disputes/:id` | Active allowlisted admin; one case's order snapshot; requestKey omitted |
+| POST | `/admin/order-disputes/:id/resolve` | Active allowlisted admin, `{version, decision, resolution}`; decision refund/decline; own orders forbidden |
+
+All POST fields are allowlisted. `version` is the current order revision; text fields are trimmed and must contain 1–2000 characters. No caller-supplied amounts, references, actors, states or dates are accepted. Participant endpoints return 404 for another user's order. Unknown case IDs return 404; malformed IDs/inputs return 400; wrong roles return 403; stale/closed/ineligible transitions return 409. Simulation disabled or production returns 503 for new case creation/refunds. Every success returns the updated order; all private routes use no-store.
+
+New order states: `disputed`, `refunded`. Order `dispute` contains status open/refunded/declined, previousStatus, reason/openedBy/openedAt, optional response/respondedAt, resolution/resolvedBy/resolvedAt, and refundMinor/refundReference only after simulated refund. Original amounts are unchanged. Admin queues omit requestKey; public listing responses continue to exclude the entire embedded ledger. Participant history/detail includes shared case information.
+
+Disputed orders cannot progress collection. Decline restores previous state; full simulated refund releases a matching uncollected reservation lock but keeps the listing sold. Completed/removed inventory is preserved. Repeated final decisions conflict. Suspended users can access their own dispute endpoints as well as read/cancel; they still cannot send enquiries or resume commerce. Responses and admin decline do not require simulation to remain enabled. See [order guide](ORDERS.md) for the explicit placeholder policy, return limitations and future real-provider requirements.

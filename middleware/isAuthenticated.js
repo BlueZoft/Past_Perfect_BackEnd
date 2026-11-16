@@ -36,7 +36,9 @@ module.exports = asyncRoute(async (req, res, next) => {
       (req.path === "/user/orders" ||
         /^\/orders\/[a-f0-9]{24}$/.test(req.path))) ||
     (req.method === "POST" &&
-      /^\/orders\/[a-f0-9]{24}\/cancel$/.test(req.path));
+      /^\/orders\/[a-f0-9]{24}\/(cancel|dispute|dispute-response|test-refund)$/.test(
+        req.path,
+      ));
   if (req.user.suspended && !allowed && !orderAccess)
     throw fail(403, "Account suspended. Open account status to appeal.");
   next();
