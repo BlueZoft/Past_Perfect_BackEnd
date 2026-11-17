@@ -15,7 +15,12 @@ const keys = [
   "priceMin",
   "priceMax",
   "sort",
+  "attributeFilters",
 ];
+function alerts(value) {
+  if (typeof value !== "boolean") throw fail(400, "Invalid alert preference");
+  return value;
+}
 function name(value) {
   if (typeof value !== "string" || !value.trim() || value.trim().length > 80)
     throw fail(400, "Search name must be 1–80 characters");
@@ -33,6 +38,13 @@ exports.query = (input) => {
     if (value) query[key] = key === "q" ? value.normalize("NFKC") : value;
   }
   listQuery(query);
+  if (query.attributeFilters)
+    query.attributeFilters = JSON.stringify(
+      require("../lib/attributeFilters").parse(
+        query.attributeFilters,
+        query.category,
+      ).values,
+    );
   for (const key of ["priceMin", "priceMax"])
     if (query[key] !== undefined) query[key] = String(Number(query[key]));
   query.sort = query.sort || (query.q ? "relevance" : "newest");
@@ -41,6 +53,9 @@ exports.query = (input) => {
 function publicRecord(record) {
   const result = record.toObject({ flattenMaps: true });
   delete result.fingerprint;
+  delete result.alertCursor;
+  delete result.alertsSince;
+  result.alertsEnabled = !!result.alertsEnabled;
   return result;
 }
 exports.page = async (user) => {
@@ -65,12 +80,21 @@ exports.create = async (user, input) => {
       ),
     )
     .digest("hex");
+  const startedAt = new Date();
   const record = {
     _id: new mongoose.Types.ObjectId(),
     name: name(input.name),
     query,
     fingerprint,
     revision: 0,
+    alertsEnabled: alerts(
+      input.alertsEnabled === undefined ? false : input.alertsEnabled,
+    ),
+    alertsSince: startedAt,
+    alertCursor: {
+      at: startedAt,
+      id: new mongoose.Types.ObjectId("000000000000000000000000"),
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -111,13 +135,28 @@ exports.change = async (user, id, input, remove = false) => {
     suspended: { $ne: true },
     savedSearches: { $elemMatch: { _id: id, revision: input.version } },
   };
+  const set = { "savedSearches.$.updatedAt": new Date() };
+  if (!remove) {
+    if (input.name === undefined && input.alertsEnabled === undefined)
+      throw fail(400, "Invalid saved search update");
+    if (input.name !== undefined)
+      set["savedSearches.$.name"] = name(input.name);
+    if (input.alertsEnabled !== undefined) {
+      set["savedSearches.$.alertsEnabled"] = alerts(input.alertsEnabled);
+      if (input.alertsEnabled) {
+        const since = new Date();
+        set["savedSearches.$.alertsSince"] = since;
+        set["savedSearches.$.alertCursor"] = {
+          at: since,
+          id: new mongoose.Types.ObjectId("000000000000000000000000"),
+        };
+      }
+    }
+  }
   const update = remove
     ? { $pull: { savedSearches: { _id: id, revision: input.version } } }
     : {
-        $set: {
-          "savedSearches.$.name": name(input.name),
-          "savedSearches.$.updatedAt": new Date(),
-        },
+        $set: set,
         $inc: { "savedSearches.$.revision": 1 },
       };
   const account = await User.findOneAndUpdate(filter, update, {

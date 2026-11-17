@@ -53,8 +53,16 @@ app.use(require("./routes/savedSearches"));
 app.use(require("./routes/media"));
 app.use(require("./routes/safety"));
 app.use(require("./routes/orders"));
+app.use(require("./routes/reviews"));
+app.use(require("./routes/analytics"));
 app.use(require("./routes/orderDisputes"));
 app.use(require("./routes/accountModeration"));
+app.get("/health/live", (req, res) => res.json({ status: "ok" }));
+app.get("/health/ready", (req, res) => {
+  const ready = require("mongoose").connection.readyState === 1;
+  res.setHeader("Cache-Control", "no-store");
+  res.status(ready ? 200 : 503).json({ status: ready ? "ready" : "not_ready" });
+});
 app.get("/", (req, res) => res.json("Welcome to the PastPerfect API"));
 app.use((req, res) => res.status(404).json({ error: "Not found" }));
 app.use((err, req, res, next) => {

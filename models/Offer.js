@@ -33,6 +33,32 @@ const orderSchema = new mongoose.Schema({
   fulfilment: { type: String, enum: ["collection"] },
   paymentMode: String,
   paymentReference: String,
+  review: {
+    type: new mongoose.Schema(
+      {
+        rating: { type: Number, min: 1, max: 5, required: true },
+        text: { type: String, maxlength: 2000, required: true },
+        createdAt: Date,
+        hidden: { type: Boolean, default: false },
+        moderation: {
+          type: [
+            new mongoose.Schema(
+              {
+                actor: mongoose.Schema.Types.ObjectId,
+                hidden: Boolean,
+                reason: String,
+                at: Date,
+              },
+              { _id: false },
+            ),
+          ],
+          default: () => [],
+        },
+      },
+      { _id: false },
+    ),
+    default: undefined,
+  },
   dispute: {
     type: new mongoose.Schema(
       {
@@ -161,6 +187,7 @@ schema.index(
     partialFilterExpression: { "orders.requestKey": { $exists: true } },
   },
 );
+schema.index({ "orders.seller": 1, "orders.review.createdAt": -1 });
 schema.index({ orderLock: 1, "reservation.expiresAt": 1 });
 schema.index({ "orders.dispute.status": 1, "orders.dispute.openedAt": -1 });
 module.exports = mongoose.model("Offer", schema);

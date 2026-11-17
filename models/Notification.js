@@ -11,6 +11,7 @@ const schema = new mongoose.Schema(
         "verification",
         "account",
         "order",
+        "search",
       ],
       required: true,
     },

@@ -12,7 +12,7 @@ router.post(
   "/user/saved-searches",
   auth,
   asyncRoute(async (req, res) => {
-    assertFields(req.body, ["name", "query"]);
+    assertFields(req.body, ["name", "query", "alertsEnabled"]);
     res.status(201).json(await searches.create(req.user._id, req.body));
   }),
 );
@@ -20,7 +20,7 @@ router.patch(
   "/user/saved-searches/:id",
   auth,
   asyncRoute(async (req, res) => {
-    assertFields(req.body, ["name", "version"]);
+    assertFields(req.body, ["name", "version", "alertsEnabled"]);
     res.json(await searches.change(req.user._id, req.params.id, req.body));
   }),
 );

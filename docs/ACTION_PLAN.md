@@ -1,6 +1,6 @@
-# v2.9 action plan
+# v3.0 local application milestone
 
-## Completed in this release
+## Completed application work
 
 1. Repair password verification and replace browser-readable permanent tokens with expiring, revocable HTTP-only sessions.
 2. Restore frontend compilation with React 18/Vite, remove missing session helper imports, centralize API requests and configuration.
@@ -17,18 +17,18 @@
 13. Add server-priced order snapshots, atomic buyer reservations, idempotent creation, cancellation/expiry, participant-only order history/contact, collection fulfilment and an explicitly non-production payment simulator.
 14. Add private buyer disputes, seller responses, atomic full test refunds, admin review, English/Sinhala/Tamil screens, and participant notifications.
 15. Add language-neutral indexed keyword search with relevance ordering and condition/size filters, plus private named saved searches with atomic limits and versioned rename/removal.
+16. Add metadata-based attribute filters and saved-query support; opt-in in-app matching alerts with durable scan progress, retry and duplicate protection.
+17. Add immutable completed test-order buyer reviews, separate simulated reputation, versioned admin hide/restore, and private seller counts/test-checkout analytics.
+18. Add liveness/database-readiness checks and a local release checklist with reproducible tests and explicit remaining responsibilities.
 
-## Next: marketplace MVP
+## Local milestone closed
 
-- Production scheduling/monitoring, remote-provider orphan reconciliation, malware scanning and deployment resource controls.
-- Reviewed production geography/catalogue configuration, typed-attribute/fuzzy search extensions, matching-listing alerts and optional realtime messaging/Web Push delivery.
-- Production SMTP credentials, reviewed real marketplace policy, audit archival, administrator MFA and further moderation tooling.
-- Manual assistive-technology, contrast and device testing; ongoing accessibility and translation review as features grow.
+See [LOCAL_RELEASE.md](LOCAL_RELEASE.md) for the implemented scope and validation. No live deployment or environment publication is performed. Real-world values remain documented placeholders.
 
-## Later: managed transactions
+## Operator/provider launch responsibilities
 
-- Validate actual provider/business requirements; replace documented placeholders securely.
-- Real payment provider integration, signature-verified/idempotent webhooks, seller settlement, shipping and real refunds/chargebacks. Collection order/reservation foundations are implemented in v2.7; dispute review and simulated full refunds in v2.8.
-- Transaction-linked reviews, delivery notifications and seller analytics.
+Hosting/TLS, secrets, backups/restore, resource controls, shared rate limits, monitoring/scheduling/capacity, remote media reconciliation/scanning, actual SMTP/geography/catalogue/policy, real payments/webhooks/settlement/refunds/chargebacks/shipping, and manual accessibility/native-speaker review remain outside this local release. Existing test payment/refund/review flows never move money or establish real reputation.
 
-This release does not claim these future capabilities. No present-day market research or existing-data migration is required for this implementation. Keep each README and API/configuration documentation synchronized with future changes.
+## Optional product and hardening tracks
+
+Admin MFA/step-up auth, long-term audit archival/export, review-specific evidence/report/appeal policy, fuzzy/transliterated search, realtime messaging/Web Push/email alerts, traffic analytics and delivery notifications remain separate scoped extensions. Current in-app saved-search alerts, collection order notifications and seller inventory/order analytics are complete for local validation. These optional tracks are not silently claimed as implemented.

@@ -70,3 +70,13 @@ Check the [order guide](ORDERS.md) before handling cases. One case/response and 
 Validate the `listing_keywords` title/description text index declared in `models/Offer.js` before serving keyword searches. Its default language is none and title/description weights are 4/1. The normal development auto-index workflow creates it; controlled production deployments must provision it when auto-index is disabled. Do not drop another index blindly: MongoDB permits one text index per collection. See [search guide](SEARCH.md) for behavior, performance limits and upgrade requirements. No data reset or external provider credentials are needed.
 
 Saved preferences are a bounded private array in the user document (maximum 25). They do not create background jobs or alerts and do not store inventory snapshots. Existing accounts need no data migration; absent arrays start empty on the first save. Suspended accounts cannot access the feature. Replace production catalogue/geography through the existing configuration workflow; old saved filters may then need user replacement rather than silent conversion.
+
+## v3.0 local completion checks
+
+- `GET /health/live`: HTTP liveness only. `GET /health/ready`: 200 when Mongoose reports connected, otherwise 503. Readiness exposes no secrets and is not a full SMTP/media/index/worker check.
+- `npm run search:alerts`: one bounded alert batch, persisted account/search checkpoints and unique notification event keys. The API also sweeps at startup/every minute with a per-process overlap guard. Retry failures after fixing database/configuration; progress is retained. Do not purge search notification event markers without a replacement deduplication policy.
+- `SEARCH_ALERT_DELAY_SECONDS=60`: starter settling delay; valid 0–3600 seconds. No new external credentials are required.
+- `/admin/reviews`: hide/restore reviews with a shared reason and current order version. Review audit keeps the last 10 decisions per order; archival remains a separately reviewed production responsibility. Do not include private internal notes in shared reasons.
+- `/analytics`: own seller counts and simulated checkout/refund totals only; no earnings/payout/traffic claims.
+
+See [local release checklist](LOCAL_RELEASE.md) for the implemented scope, local commands and remaining launch/optional tracks. No live deployment, cloud environment publication, SMTP send, provider charge/refund, storage reconciliation against a live account or production scheduled task is performed by v3.0.

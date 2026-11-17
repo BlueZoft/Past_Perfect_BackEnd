@@ -1,6 +1,6 @@
 {
   "name": "pastperfect",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,8 @@
     "test": "node --test test/*.test.js",
     "media:maintenance": "node scripts/media-maintenance.js",
     "media:orphans": "node scripts/media-orphans.js",
-    "orders:expire": "node scripts/orders-expire.js"
+    "orders:expire": "node scripts/orders-expire.js",
+    "search:alerts": "node scripts/search-alerts.js"
   },
   "keywords": [],
   "author": "",

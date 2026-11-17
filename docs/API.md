@@ -198,3 +198,21 @@ Disputed orders cannot progress collection. Decline restores previous state; ful
 | DELETE | `/user/saved-searches/:id` | `{version}`; removes owner's record; 204 |
 
 Records contain `_id,name,query,revision,createdAt,updatedAt`. Internal fingerprints and other accounts' searches are not exposed. Unknown body/query fields are rejected on save. Names trim to 1–80 characters. Stored filters exclude page/limit; canonical defaults and numeric price representations deduplicate equivalent queries. Duplicate filters or limit/stale conflicts return 409; foreign/missing IDs return 404. Reads/mutations use no-store, cookie session authentication and existing exact-origin mutation checks. Suspended accounts receive 403. Reopening a saved search uses the regular public query endpoint and current visibility; it does not reserve inventory or send alerts. See [search guide](SEARCH.md) for text syntax, index provisioning and limits.
+
+## v3.0 local application completion
+
+| Method | Path | Contract |
+| --- | --- | --- |
+| GET | `/health/live` | 200 `{status:"ok"}` while HTTP service responds; no secrets/configuration |
+| GET | `/health/ready` | 200 `{status:"ready"}` when Mongoose is connected, otherwise 503 `{status:"not_ready"}`; no-store; connection state only |
+| POST | `/orders/:id/review` | Active buyer participant, `{version,rating,text}`; rating integer 1–5, trimmed text 1–2000; completed test order, one immutable review; 201 updated order |
+| GET | `/seller/:id/reviews?page=1&limit=10` | Public visible completed-order reviews plus separate test/live summary; current implementation accepts test-order reviews only |
+| GET | `/admin/reviews?page=1&limit=10` | Active allowlisted admin; private paginated review/order snapshots and moderation history |
+| PATCH | `/admin/reviews/:id` | Active allowlisted admin, `{version,hidden,reason}`; reason 1–1000; own buyer/seller orders forbidden; returns `_id,revision,review` |
+| GET | `/user/analytics` | Active session owner's inventory/order counts, hidden count, simulated checkout/refund totals in integer LKR minor units; no-store |
+
+Review versions are the order revision. A review write and concurrent collection/dispute/moderation transitions use the same atomic listing ledger/version. Wrong participant receives 404, wrong buyer/admin role 403, malformed inputs 400 and ineligible/repeated/stale actions 409. Review creation returns 201, moderation 200. Public review projection excludes order IDs, buyer IDs/email, amounts, internal state and moderation audit; usernames and user-written text are intentionally public. Hidden reviews, suspended reviewers/sellers and orders no longer completed are excluded from counts/averages/results. Returned reviews carry `test:true`; summaries separate test/live (`live` remains zero). A simulated review must not be treated as real customer reputation. No live-payment review adapter is enabled.
+
+Search queries now accept `attributeFilters` as a JSON string with at most eight metadata-defined fields and a valid `category`. Text is bounded case-insensitive literal substring matching; enum values match exactly; numbers accept a bounded scalar or `{min,max}` range (either bound optional). Unknown keys/operators, non-finite/out-of-schema values, reversed/empty ranges and absent categories return 400. Example: `category=furniture&attributeFilters={"widthCm":{"min":50,"max":100}}` (URL-encode JSON). Keyword/condition/size/location filters continue to combine normally. The saved-search allowlist also accepts this string and canonicalizes JSON key/range ordering.
+
+`POST /user/saved-searches` adds optional boolean `alertsEnabled` (default false). `PATCH /user/saved-searches/:id` now accepts `name` and/or `alertsEnabled` with `version`; at least one change field is required. Setting alerts true starts a new server-time eligibility window; disabling leaves previously delivered notifications intact. Returned records expose the boolean, never scan cursors/start times/fingerprints. Alerts use notification type `search` with a server-generated `/offer/:id` link. These are in-app notifications only. See [local release guide](LOCAL_RELEASE.md) and [search guide](SEARCH.md).

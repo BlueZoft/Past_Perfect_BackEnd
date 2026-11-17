@@ -15,6 +15,21 @@ async function start() {
       expiring = false;
     }
   };
+  let alerting = false;
+  const alertSweep = async () => {
+    if (alerting) return;
+    alerting = true;
+    try {
+      await require("./services/searchAlerts").run();
+    } catch {
+      console.error("Search alert retry pending");
+    } finally {
+      alerting = false;
+    }
+  };
+  const alertTimer = setInterval(alertSweep, 60000);
+  alertTimer.unref();
+  void alertSweep();
   const expireTimer = setInterval(sweep, 60000);
   expireTimer.unref();
   void sweep();
@@ -23,6 +38,7 @@ async function start() {
   );
   const stop = () => {
     clearInterval(expireTimer);
+    clearInterval(alertTimer);
     server.close(() => mongoose.disconnect().then(() => process.exit(0)));
   };
   process.on("SIGTERM", stop);
